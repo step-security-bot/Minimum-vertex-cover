@@ -1,0 +1,17 @@
+[package]
+name = "Minimum-vertex-cover"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name="vertex"
+path="src/lib.rs"
+
+[[bin]]
+name = "naïve_search"
+path="src/bin/naive_search.rs"
+
+[dependencies]
+graph = { git = "https://github.com/umons-dept-comp-sci/PhoegRustGraph.git" }
