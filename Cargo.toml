@@ -14,4 +14,6 @@ name = "naïve_search"
 path="src/bin/naive_search.rs"
 
 [dependencies]
+graphalgs = "0.1.1"
+petgraph = "0.6.4"
 graph = { git = "https://github.com/umons-dept-comp-sci/PhoegRustGraph.git" }
