@@ -9,10 +9,6 @@ edition = "2021"
 name="vertex"
 path="src/lib.rs"
 
-[[bin]]
-name = "naïve_search"
-path="src/bin/naive_search.rs"
-
 [dependencies]
 graphalgs = "0.1.1"
 petgraph = "0.6.4"

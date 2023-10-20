@@ -1,9 +1,8 @@
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader};
 
 use graph::*;
-use serde::{Deserialize, Serialize};
 
 /// Check if a given vertex cover is a vertex cover of a given graph.
 ///
@@ -72,7 +71,10 @@ pub fn is_vertex_cover(graph_nauty: &GraphNauty, vertex_cover: &Vec<u64>) -> boo
 /// assert!(graph.is_edge(4, 1));
 /// ```
 pub fn load_clq_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
-    let file = File::open(path).expect("Unable to open file");
+    let file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => return Err(format!("File {:?} not found \n {:?}", path, e).into()),
+    };
     let reader = BufReader::new(file);
 
     let mut g = GraphNauty::new(0);
@@ -106,7 +108,7 @@ pub fn load_clq_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
                 edges += 1;
             }
             _ => {
-                return Err("Invalid file format".into());
+                return Err(format!("Invalid file format for line {:?}", line).into());
             }
         }
     }
