@@ -1,0 +1,22 @@
+graphs:
+  - id: "myciel3.col"
+    format: "col"
+    number_of_vertices: 11
+    number_of_edges: 20
+    mvc_val: 6
+  - id: "myciel4.col"
+    format: "col"
+    number_of_vertices: 23
+    number_of_edges: 71
+    mvc_val: 12
+  - id: "petersen.col"
+    format: "col"
+    number_of_vertices: 10
+    number_of_edges: 15
+    mvc_val: 6
+  - id: "queen5_5.col"
+    format: "col"
+    number_of_vertices: 25
+    number_of_edges: 320
+    mvc_val: 20
+
