@@ -1,7 +1,9 @@
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read, Write};
+
 use graph::*;
+use serde::{Deserialize, Serialize};
 
 /// Check if a given vertex cover is a vertex cover of a given graph.
 ///
@@ -44,7 +46,7 @@ pub fn is_vertex_cover(graph_nauty: &GraphNauty, vertex_cover: &Vec<u64>) -> boo
 ///
 /// # Test file
 /// ```text
-/// c File: test.col
+/// c File: test.clq
 /// c Source: Cyril Moreau
 /// p edge 5 6
 /// e 1 2
@@ -58,9 +60,9 @@ pub fn is_vertex_cover(graph_nauty: &GraphNauty, vertex_cover: &Vec<u64>) -> boo
 /// # Example
 /// ```rust
 /// use graph::{Graph, GraphConstructible, GraphNauty};
-/// use vertex::graph_utils::load_col_file;
+/// use vertex::graph_utils::load_clq_file;
 ///
-/// let graph = load_col_file("src/resources/particular_graphs/test.col").unwrap();
+/// let graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
 /// assert_eq!(graph.order(), 5);
 /// assert!(graph.is_edge(0, 1));
 /// assert!(graph.is_edge(0, 2));
@@ -69,7 +71,7 @@ pub fn is_vertex_cover(graph_nauty: &GraphNauty, vertex_cover: &Vec<u64>) -> boo
 /// assert!(graph.is_edge(4, 0));
 /// assert!(graph.is_edge(4, 1));
 /// ```
-pub fn load_col_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
+pub fn load_clq_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
     let file = File::open(path).expect("Unable to open file");
     let reader = BufReader::new(file);
 
@@ -86,22 +88,23 @@ pub fn load_col_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
                 continue;
             }
             "p" => {
-                if values[1] != "edge" {
-                    return Err("Expecting edge format".into());
+                if values[1] != "edge" && values[1] != "col" {
+                    // Idk why col but ok
+                    return Err("Expecting edge/col format".into());
                 }
                 let order = values[2].parse::<u64>()?;
                 exp_edges = values[3].parse::<u64>()?;
                 for _ in 0..order {
                     g.add_vertex();
                 }
-            },
+            }
             "e" => {
-              if g.order() == 0 {
-                  return Err("Expecting graph order".into());
-              }
+                if g.order() == 0 {
+                    return Err("Expecting graph order".into());
+                }
                 g.add_edge(values[1].parse::<u64>()? - 1, values[2].parse::<u64>()? - 1);
                 edges += 1;
-            },
+            }
             _ => {
                 return Err("Invalid file format".into());
             }
@@ -116,11 +119,11 @@ pub fn load_col_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
     Ok(g)
 }
 
-
 #[cfg(test)]
 mod graph_utils_tests {
+    use graph::GraphNauty;
+
     use super::*;
-    use graph::{GraphNauty};
 
     #[test]
     fn test_is_vertex_cover() {
@@ -138,8 +141,8 @@ mod graph_utils_tests {
     }
 
     #[test]
-    fn test_load_col_file() {
-        let graph = load_col_file("src/resources/particular_graphs/test.col").unwrap();
+    fn test_load_clq_file() {
+        let graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
         assert_eq!(graph.order(), 5);
         assert!(graph.is_edge(0, 1));
         assert!(graph.is_edge(0, 2));
