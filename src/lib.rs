@@ -1,6 +1,7 @@
 extern crate graph;
 
 pub mod graph_utils;
+pub mod format;
 
 use graph::*;
 use crate::graph_utils::is_vertex_cover;
