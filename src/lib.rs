@@ -1,10 +1,12 @@
 extern crate graph;
 
+use petgraph::matrix_graph::MatrixGraph;
+use petgraph::Undirected;
+
+use crate::graph_utils::is_vertex_cover;
+
 pub mod graph_utils;
 pub mod format;
-
-use graph::*;
-use crate::graph_utils::is_vertex_cover;
 
 /// Naïve algorithm that searches for the minimum vertex cover of a given graph.
 ///
@@ -13,20 +15,25 @@ use crate::graph_utils::is_vertex_cover;
 ///
 /// # Example
 /// ```rust
-/// use graph::{Graph, GraphConstructible, GraphNauty};
+/// use petgraph::matrix_graph::MatrixGraph;
+/// use petgraph::Undirected;
+/// use petgraph::stable_graph::NodeIndex;
 /// use vertex::naive_search;
 ///
-/// let mut graph_nauty = GraphNauty::new(4);
-/// graph_nauty.add_edge(0, 1);
-/// graph_nauty.add_edge(1, 2);
-/// graph_nauty.add_edge(2, 0);
-/// graph_nauty.add_edge(2, 3);
+/// let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+/// for i in 0..4 {
+///    graph.add_node(i);
+/// }
+/// graph.add_edge(NodeIndex::new(0), NodeIndex::new(1), ());
+/// graph.add_edge(NodeIndex::new(1), NodeIndex::new(2), ());
+/// graph.add_edge(NodeIndex::new(2), NodeIndex::new(0), ());
+/// graph.add_edge(NodeIndex::new(2), NodeIndex::new(3), ());
 ///
 /// let expected_vertex_cover = vec![0, 2];
-/// assert_eq!(naive_search(&graph_nauty), Some(expected_vertex_cover));
+/// assert_eq!(naive_search(&graph), Some(expected_vertex_cover));
 /// ```
-pub fn naive_search(graph: &GraphNauty) -> Option<Vec<u64>> {
-    let possible_values: Vec<u64> = (0..graph.order()).collect();
+pub fn naive_search(graph: &MatrixGraph<u64, (), Undirected>) -> Option<Vec<u64>> {
+    let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
     let subsets = get_subsets(&possible_values);
 
     for subset in subsets {
@@ -51,19 +58,23 @@ fn get_subsets<T>(s: &[T]) -> Vec<Vec<T>> where T: Clone {
 
 #[cfg(test)]
 mod  algorithms_tests {
+    use petgraph::stable_graph::NodeIndex;
+
     use super::*;
-    use graph::{GraphNauty};
 
     #[test]
     fn test_naive_algorithm() {
-        let mut graph_nauty = GraphNauty::new(4);
-        graph_nauty.add_edge(0, 1);
-        graph_nauty.add_edge(1, 2);
-        graph_nauty.add_edge(2, 0);
-        graph_nauty.add_edge(2, 3);
+        let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+        for i in 0..4 {
+            graph.add_node(i);
+        }
+        graph.add_edge(NodeIndex::new(0), NodeIndex::new(1), ());
+        graph.add_edge(NodeIndex::new(1), NodeIndex::new(2), ());
+        graph.add_edge(NodeIndex::new(2), NodeIndex::new(0), ());
+        graph.add_edge(NodeIndex::new(2), NodeIndex::new(3), ());
 
         let expected_vertex_cover = vec![0, 2];
-        assert_eq!(naive_search(&graph_nauty), Some(expected_vertex_cover));
+        assert_eq!(naive_search(&graph), Some(expected_vertex_cover));
     }
 
     #[test]

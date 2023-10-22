@@ -1,9 +1,10 @@
-use vertex; // Don't forget to add XD
+use std::env;
 
+use vertex;
 use vertex::graph_utils::load_clq_file;
 use vertex::naive_search;
 
-use std::env;
+// Don't forget to add XD
 
 fn main() {
     let args: Vec<String> = env::args().collect();

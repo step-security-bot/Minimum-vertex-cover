@@ -1,7 +1,10 @@
 use std::fs::{File, read_dir};
 use std::io::Write;
-use graph::{Graph, GraphNauty};
+
+use petgraph::matrix_graph::MatrixGraph;
+use petgraph::Undirected;
 use serde::{Deserialize, Serialize};
+
 use vertex::graph_utils::load_clq_file;
 
 pub fn update_graph_info() {
@@ -25,7 +28,7 @@ pub fn update_graph_info() {
                     return;
                 },
             };
-            println!("{}: {} vertices, {} edges", path_str, graph.order(), graph.size());
+            println!("{}: {} vertices, {} edges", path_str, graph.node_count(), graph.edge_count());
             add_graph_to_yaml(path_str.split("/").last().unwrap(), "clq", &graph);
         }
     }
@@ -35,12 +38,12 @@ pub fn update_graph_info() {
 struct GraphInfo {
     id: String,
     format: String,
-    order: u64,
-    size: u64,
+    order: usize,
+    size: usize,
     mvc_val: u64,
 }
 
-pub fn add_graph_to_yaml(id: &str, format: &str, graph: &GraphNauty) {
+pub fn add_graph_to_yaml(id: &str, format: &str, graph: &MatrixGraph<u64, (), Undirected>) {
     let yaml_path = "src/resources/graph_data.yml";
     let file = File::open(yaml_path).expect(format!("Unable to open file {:?}", yaml_path).as_str());
     let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
@@ -53,8 +56,8 @@ pub fn add_graph_to_yaml(id: &str, format: &str, graph: &GraphNauty) {
     let info = GraphInfo {
         id: id.to_string(),
         format: format.to_string(),
-        order: graph.order(),
-        size: graph.size(),
+        order: graph.node_count(),
+        size: graph.edge_count(),
         mvc_val: 0,
     };
     data.push(info);

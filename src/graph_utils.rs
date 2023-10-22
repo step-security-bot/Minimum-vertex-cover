@@ -2,7 +2,9 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use graph::*;
+use petgraph::matrix_graph::MatrixGraph;
+use petgraph::stable_graph::NodeIndex;
+use petgraph::Undirected;
 
 /// Check if a given vertex cover is a vertex cover of a given graph.
 ///
@@ -11,24 +13,27 @@ use graph::*;
 ///
 /// # Example
 /// ```rust
-/// use graph::{Graph, GraphConstructible, GraphNauty};
+/// use petgraph::matrix_graph::MatrixGraph;
+/// use petgraph::Undirected;
+/// use petgraph::stable_graph::NodeIndex;
 /// use vertex::graph_utils::is_vertex_cover;
 ///
-/// let mut graph_nauty = GraphNauty::new(3);
-/// graph_nauty.add_edge(0, 1);
-/// graph_nauty.add_edge(1, 2);
-/// graph_nauty.add_edge(2, 0);
+/// let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+/// for i in 0..3 {
+///    graph.add_node(i);
+/// }
+/// graph.add_edge(NodeIndex::new(0), NodeIndex::new(1), ());
+/// graph.add_edge(NodeIndex::new(1), NodeIndex::new(2), ());
+/// graph.add_edge(NodeIndex::new(2), NodeIndex::new(0), ());
 /// let mut vertex_cover: Vec<u64> = Vec::new();
 /// vertex_cover.push(0);
-/// assert!(!is_vertex_cover(&graph_nauty, &vertex_cover));
+/// assert!(!is_vertex_cover(&graph, &vertex_cover));
 /// vertex_cover.push(1);
-/// assert!(is_vertex_cover(&graph_nauty, &vertex_cover));
-/// vertex_cover.push(2);
-/// assert!(is_vertex_cover(&graph_nauty, &vertex_cover));
+/// assert!(is_vertex_cover(&graph, &vertex_cover));
 /// ```
-pub fn is_vertex_cover(graph_nauty: &GraphNauty, vertex_cover: &Vec<u64>) -> bool {
-    for edge in graph_nauty.edges() {
-        if !vertex_cover.contains(&edge.0) && !vertex_cover.contains(&edge.1) {
+pub fn is_vertex_cover(graph: &MatrixGraph<u64, (), Undirected>, vertex_cover: &Vec<u64>) -> bool {
+    for (i, j) in edges(graph) {
+        if !vertex_cover.contains(&(i as u64)) && !vertex_cover.contains(&(j as u64)) {
             return false;
         }
     }
@@ -58,26 +63,27 @@ pub fn is_vertex_cover(graph_nauty: &GraphNauty, vertex_cover: &Vec<u64>) -> boo
 ///
 /// # Example
 /// ```rust
-/// use graph::{Graph, GraphConstructible, GraphNauty};
+/// use petgraph::matrix_graph::MatrixGraph;
+/// use petgraph::stable_graph::NodeIndex;
 /// use vertex::graph_utils::load_clq_file;
 ///
 /// let graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
-/// assert_eq!(graph.order(), 5);
-/// assert!(graph.is_edge(0, 1));
-/// assert!(graph.is_edge(0, 2));
-/// assert!(graph.is_edge(0, 3));
-/// assert!(graph.is_edge(2, 3));
-/// assert!(graph.is_edge(4, 0));
-/// assert!(graph.is_edge(4, 1));
+/// assert_eq!(graph.node_count(), 5);
+/// assert!(graph.has_edge(NodeIndex::new(0), NodeIndex::new(1)));
+/// assert!(graph.has_edge(NodeIndex::new(0), NodeIndex::new(2)));
+/// assert!(graph.has_edge(NodeIndex::new(0), NodeIndex::new(3)));
+/// assert!(graph.has_edge(NodeIndex::new(2), NodeIndex::new(3)));
+/// assert!(graph.has_edge(NodeIndex::new(4), NodeIndex::new(0)));
+/// assert!(graph.has_edge(NodeIndex::new(4), NodeIndex::new(1)));
 /// ```
-pub fn load_clq_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
+pub fn load_clq_file(path: &str) -> Result<MatrixGraph<u64, (), Undirected>, Box<dyn Error>> {
     let file = match File::open(path) {
         Ok(file) => file,
         Err(e) => return Err(format!("File {:?} not found \n {:?}", path, e).into()),
     };
     let reader = BufReader::new(file);
 
-    let mut g = GraphNauty::new(0);
+    let mut g = MatrixGraph::<u64, (), Undirected>::new_undirected();
     let mut exp_edges = 0;
     let mut edges = 0;
 
@@ -96,15 +102,18 @@ pub fn load_clq_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
                 }
                 let order = values[2].parse::<u64>()?;
                 exp_edges = values[3].parse::<u64>()?;
-                for _ in 0..order {
-                    g.add_vertex();
+                for i in 0..order {
+                    g.add_node(i);
                 }
             }
             "e" => {
-                if g.order() == 0 {
+                if g.node_count() == 0 {
                     return Err("Expecting graph order".into());
                 }
-                g.add_edge(values[1].parse::<u64>()? - 1, values[2].parse::<u64>()? - 1);
+                let i = values[1].parse::<usize>()? - 1;
+                let j = values[2].parse::<usize>()? - 1;
+
+                g.add_edge(NodeIndex::new(i), NodeIndex::new(j), ());
                 edges += 1;
             }
             _ => {
@@ -115,42 +124,135 @@ pub fn load_clq_file(path: &str) -> Result<GraphNauty, Box<dyn Error>> {
     if edges != exp_edges {
         return Err(format!("Expecting {} edges but readed {} edges", exp_edges, edges).into());
     }
-    if g.order() == 0 {
+    if g.node_count() == 0 {
         return Err("Expecting graph order".into());
     }
     Ok(g)
 }
 
+pub struct EdgeIterator<'a> {
+    pub graph: &'a MatrixGraph<u64, (), Undirected>,
+    // We are going to iterate over the upper triangle of the adjacency matrix (i, j)
+    pub i: usize,
+    // current left vertex
+    pub j: usize, // current right vertex
+}
+
+impl EdgeIterator<'_> {
+    fn next_edge(&mut self) {
+        self.j += 1;
+        if self.j == self.graph.node_count() {
+            self.i += 1;
+            self.j = self.i + 1;
+        }
+    }
+}
+
+impl Iterator for EdgeIterator<'_> {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let n = self.graph.node_count();
+        if n > 1 {
+            self.next_edge();
+            while self.i < n - 1 && !self.graph.has_edge(
+                NodeIndex::new(self.i),
+                NodeIndex::new(self.j)) {
+                self.next_edge();
+            }
+            if self.i < n - 1 {
+                return Some((self.i, self.j));
+            }
+        }
+        None
+    }
+}
+
+/// Returns an Iterator over the edges of the graph.
+///
+/// # Example
+/// ```rust
+/// use petgraph::matrix_graph::MatrixGraph;
+/// use petgraph::Undirected;
+/// use petgraph::stable_graph::NodeIndex;
+/// use vertex::graph_utils::edges;
+///
+/// let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+/// for i in 0..10 {
+///     graph.add_node(i);
+/// }
+/// for i in 0..9 {
+///     graph.add_edge(NodeIndex::new(i), NodeIndex::new(i + 1), ())
+/// }
+///
+/// let mut i = 0;
+/// for (u, v) in edges(&graph) {
+///     assert_eq!(u, i); // = i
+///     assert_eq!(v, i + 1); // = j
+///     i += 1;
+/// }
+/// assert_eq!(i, graph.edge_count());
+/// ```
+///
+pub fn edges(graph: &MatrixGraph<u64, (), Undirected>) -> EdgeIterator {
+    EdgeIterator {
+        graph,
+        i: 0,
+        j: 0,
+    }
+}
+
 #[cfg(test)]
 mod graph_utils_tests {
-    use graph::GraphNauty;
-
     use super::*;
 
     #[test]
+    fn test_edge_iterator() {
+        let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+        for i in 0..10 {
+            graph.add_node(i);
+        }
+
+        for i in 0..9 {
+            graph.add_edge(NodeIndex::new(i), NodeIndex::new(i + 1), ())
+        }
+
+        let mut i = 0;
+        for (u, v) in edges(&graph) {
+            assert_eq!(u, i); // = i
+            assert_eq!(v, i + 1); // = j
+            i += 1;
+        }
+        assert_eq!(i, graph.edge_count());
+    }
+
+    #[test]
     fn test_is_vertex_cover() {
-        let mut graph_nauty = GraphNauty::new(3);
-        graph_nauty.add_edge(0, 1);
-        graph_nauty.add_edge(1, 2);
-        graph_nauty.add_edge(2, 0);
+        let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+        for i in 0..3 {
+            graph.add_node(i);
+        }
+        graph.add_edge(NodeIndex::new(0), NodeIndex::new(1), ());
+        graph.add_edge(NodeIndex::new(1), NodeIndex::new(2), ());
+        graph.add_edge(NodeIndex::new(2), NodeIndex::new(0), ());
         let mut vertex_cover: Vec<u64> = Vec::new();
         vertex_cover.push(0);
-        assert!(!is_vertex_cover(&graph_nauty, &vertex_cover));
+        assert!(!is_vertex_cover(&graph, &vertex_cover));
         vertex_cover.push(1);
-        assert!(is_vertex_cover(&graph_nauty, &vertex_cover));
+        assert!(is_vertex_cover(&graph, &vertex_cover));
         vertex_cover.push(2);
-        assert!(is_vertex_cover(&graph_nauty, &vertex_cover));
+        assert!(is_vertex_cover(&graph, &vertex_cover));
     }
 
     #[test]
     fn test_load_clq_file() {
         let graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
-        assert_eq!(graph.order(), 5);
-        assert!(graph.is_edge(0, 1));
-        assert!(graph.is_edge(0, 2));
-        assert!(graph.is_edge(0, 3));
-        assert!(graph.is_edge(2, 3));
-        assert!(graph.is_edge(4, 0));
-        assert!(graph.is_edge(4, 1));
+        assert_eq!(graph.node_count(), 5);
+        assert!(graph.has_edge(NodeIndex::new(0), NodeIndex::new(1)));
+        assert!(graph.has_edge(NodeIndex::new(0), NodeIndex::new(2)));
+        assert!(graph.has_edge(NodeIndex::new(0), NodeIndex::new(3)));
+        assert!(graph.has_edge(NodeIndex::new(2), NodeIndex::new(3)));
+        assert!(graph.has_edge(NodeIndex::new(4), NodeIndex::new(0)));
+        assert!(graph.has_edge(NodeIndex::new(4), NodeIndex::new(1)));
     }
 }
