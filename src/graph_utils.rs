@@ -1,10 +1,11 @@
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 
 use petgraph::matrix_graph::MatrixGraph;
 use petgraph::stable_graph::NodeIndex;
 use petgraph::Undirected;
+use serde::{Deserialize, Serialize};
 
 /// Check if a given vertex cover is a vertex cover of a given graph.
 ///
@@ -51,7 +52,6 @@ pub fn is_vertex_cover(graph: &MatrixGraph<u64, (), Undirected>, vertex_cover: &
 /// # Test file
 /// ```text
 /// c File: test.clq
-/// c Source: Cyril Moreau
 /// p edge 5 6
 /// e 1 2
 /// e 1 3
@@ -200,6 +200,88 @@ pub fn edges(graph: &MatrixGraph<u64, (), Undirected>) -> EdgeIterator {
         i: 0,
         j: 0,
     }
+}
+
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct GraphInfo {
+    id: String,
+    format: String,
+    order: usize,
+    size: usize,
+    mvc_val: u64,
+}
+
+/// Add the graph id with its format in the yaml file located at src/resources/graph_data.yml.
+///
+/// The default value for mvc_val is 0, it has to be updated manually.
+/// If the graph id is already in the file, it is not added again.
+///
+/// # Panics
+/// Panics if the file cannot be opened or the graph cannot be written to the file.
+///
+/// # Example
+/// TODO : add example
+pub fn add_graph_to_yaml(id: &str, format: &str, graph: &MatrixGraph<u64, (), Undirected>, path: &str) {
+    let file = File::open(path)
+        .expect(format!("Unable to open file {:?}", path).as_str());
+    let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
+
+    if data.iter().any(|x| x.id == id) {
+        // If the graph is already in the file, we don't add it again
+        return;
+    }
+
+    let info = GraphInfo {
+        id: id.to_string(),
+        format: format.to_string(),
+        order: graph.node_count(),
+        size: graph.edge_count(),
+        mvc_val: 0,
+    };
+    data.push(info);
+
+    // Update the file
+    let mut file = File::create(path)
+        .expect(format!("Unable to create file {:?}", path).as_str());
+    file.write_all(serde_yaml::to_string(&data).unwrap().as_bytes())
+        .expect(format!("Unable to write file to {:?}", path).as_str());
+}
+
+
+/// Update the known value of the minimum vertex cover for a given graph id.
+///
+/// # Panics
+/// Panics if :
+/// - The file cannot be opened
+/// - The graph id is not in the file
+/// - The graph id cannot be updated (error while writing to the file)
+///
+/// # example
+/// TODO : add example
+pub fn update_mvc_value(id: &str, mvc_val: u64, path: &str) {
+    let file = File::open(path)
+        .expect(format!("Unable to open file {:?}", path).as_str());
+
+    let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
+
+    let mut found = false;
+    for info in data.iter_mut() {
+        if info.id == id {
+            info.mvc_val = mvc_val;
+            found = true;
+            break;
+        }
+    }
+    if !found {
+        panic!("Graph {:?} not found in {:?} to store the mvc : {:?}", id, path, mvc_val);
+    }
+
+    // Update the file
+    let mut file = File::create(path)
+        .expect(format!("Unable to create file {:?}", path).as_str());
+    file.write_all(serde_yaml::to_string(&data).unwrap().as_bytes())
+        .expect(format!("Unable to write file to {:?}", path).as_str());
 }
 
 #[cfg(test)]
