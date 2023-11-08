@@ -1,18 +1,16 @@
 use std::cmp::min;
 
-use petgraph::graph::NodeIndex;
-use petgraph::matrix_graph::MatrixGraph;
-use petgraph::Undirected;
+use petgraph::prelude::UnGraphMap;
 
 use crate::graph_utils::{copy_graph, edges, get_vertex_with_max_degree};
 
-pub fn solve(graph: &MatrixGraph<u64, (), Undirected>) -> u64 {
+pub fn solve(graph: &UnGraphMap<u64, ()>) -> u64 {
     // Initialize the upper bound to the number of nodes in the graph
     // and the vertex cover found so far is empty
     b_and_b(graph, graph.node_count() as u64, vec![])
 }
 
-fn b_and_b(graph: &MatrixGraph<u64, (), Undirected>,
+fn b_and_b(graph: &UnGraphMap<u64, ()>,
            upper_bound: u64,
            vertex_cover: Vec<u64>) -> u64 {
 
@@ -36,7 +34,7 @@ fn b_and_b(graph: &MatrixGraph<u64, (), Undirected>,
     // ====> First case <====
     let mut vertex_cover_v_in_cover = vertex_cover.clone();
 
-    println!("v = {} and node count = {} and node cound for cover = {}", v, graph.node_count(), graph_v_in_cover.node_count());
+    println!("v = {} and node count = {} and node count for cover = {}", v, graph.node_count(), graph_v_in_cover.node_count());
 
     for (v, u) in edges(graph) {
         println!("v = {} and u = {}", v, u)
@@ -48,15 +46,15 @@ fn b_and_b(graph: &MatrixGraph<u64, (), Undirected>,
         println!("v = {} and u = {}", v, u)
     }
 
-    for neighbor in graph.neighbors(NodeIndex::new(v)) {
+    for neighbor in graph.neighbors(v as u64) {
         println!("neighbor = {:?}", neighbor);
         for (v, u) in edges(graph) {
             println!("v = {} and u = {}", v, u)
         }
-        vertex_cover_v_in_cover.push(neighbor.index() as u64);
+        vertex_cover_v_in_cover.push(neighbor);
         graph_v_in_cover.remove_node(neighbor);
     }
-    graph_v_in_cover.remove_node(NodeIndex::new(v));
+    graph_v_in_cover.remove_node(v as u64);
     let res_v_in_cover = b_and_b(&graph_v_in_cover,
                                  upper_bound,
                                  vertex_cover_v_in_cover);
@@ -64,7 +62,7 @@ fn b_and_b(graph: &MatrixGraph<u64, (), Undirected>,
     // ====> Second case <====
     let vertex_cover_v_not_in_cover = vertex_cover.clone();
 
-    graph_v_not_in_cover.remove_node(NodeIndex::new(v));
+    graph_v_not_in_cover.remove_node(v as u64);
     let res_v_not_in_cover = b_and_b(&graph_v_not_in_cover,
                                      min(upper_bound, res_v_in_cover),
                                      vertex_cover_v_not_in_cover);
@@ -74,16 +72,16 @@ fn b_and_b(graph: &MatrixGraph<u64, (), Undirected>,
 
 
 #[allow(dead_code)]
-fn deg_lb(_graph: &MatrixGraph<u64, (), Undirected>) -> u64 {
+fn deg_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
     todo!("Implement lower bound based on degree")
 }
 
 #[allow(dead_code)]
-fn sat_lb(_graph: &MatrixGraph<u64, (), Undirected>) -> u64 {
+fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
     todo!("Implement lower bound based on satisfiability")
 }
 
 #[allow(dead_code)]
-fn clq_lb(_graph: &MatrixGraph<u64, (), Undirected>) -> u64 {
-    todo!("Implement lower bound based on clique AND see if it's usefull")
+fn clq_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
+    todo!("Implement lower bound based on clique AND see if it's useful")
 }

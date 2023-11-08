@@ -1,7 +1,6 @@
 extern crate graph;
 
-use petgraph::matrix_graph::MatrixGraph;
-use petgraph::Undirected;
+use petgraph::prelude::UnGraphMap;
 
 use crate::graph_utils::is_vertex_cover;
 
@@ -16,24 +15,22 @@ pub mod branch_and_bound;
 ///
 /// # Example
 /// ```rust
-/// use petgraph::matrix_graph::MatrixGraph;
-/// use petgraph::Undirected;
-/// use petgraph::stable_graph::NodeIndex;
+/// use petgraph::prelude::UnGraphMap;
 /// use vertex::naive_search;
 ///
-/// let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+/// let mut graph = UnGraphMap::<u64, ()>::new();
 /// for i in 0..4 {
 ///    graph.add_node(i);
 /// }
-/// graph.add_edge(NodeIndex::new(0), NodeIndex::new(1), ());
-/// graph.add_edge(NodeIndex::new(1), NodeIndex::new(2), ());
-/// graph.add_edge(NodeIndex::new(2), NodeIndex::new(0), ());
-/// graph.add_edge(NodeIndex::new(2), NodeIndex::new(3), ());
+/// graph.add_edge(0, 1, ());
+/// graph.add_edge(1, 2, ());
+/// graph.add_edge(2, 0, ());
+/// graph.add_edge(2, 3, ());
 ///
 /// let expected_vertex_cover = vec![0, 2];
 /// assert_eq!(naive_search(&graph), Some(expected_vertex_cover));
 /// ```
-pub fn naive_search(graph: &MatrixGraph<u64, (), Undirected>) -> Option<Vec<u64>> {
+pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> Option<Vec<u64>> {
     let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
     let subsets : Vec<Vec<u64>> = get_subsets(&possible_values);
 
@@ -59,20 +56,18 @@ fn get_subsets<T>(s: &[T]) -> Vec<Vec<T>> where T: Clone {
 
 #[cfg(test)]
 mod  algorithms_tests {
-    use petgraph::stable_graph::NodeIndex;
-
     use super::*;
 
     #[test]
     fn test_naive_algorithm() {
-        let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+        let mut graph = UnGraphMap::<u64, ()>::new();
         for i in 0..4 {
             graph.add_node(i);
         }
-        graph.add_edge(NodeIndex::new(0), NodeIndex::new(1), ());
-        graph.add_edge(NodeIndex::new(1), NodeIndex::new(2), ());
-        graph.add_edge(NodeIndex::new(2), NodeIndex::new(0), ());
-        graph.add_edge(NodeIndex::new(2), NodeIndex::new(3), ());
+        graph.add_edge(0, 1, ());
+        graph.add_edge(1, 2, ());
+        graph.add_edge(2, 0, ());
+        graph.add_edge(2, 3, ());
 
         let expected_vertex_cover = vec![0, 2];
         assert_eq!(naive_search(&graph), Some(expected_vertex_cover));

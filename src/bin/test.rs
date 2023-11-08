@@ -4,7 +4,9 @@ use petgraph::matrix_graph::MatrixGraph;
 use petgraph::Undirected;
 
 fn main() {
-    graph_map()
+    graph_map();
+
+    // matrix();
 }
 
 
@@ -18,6 +20,12 @@ pub fn matrix() {
     graph.remove_node(NodeIndex::new(0));
 
     assert!(graph.has_edge(NodeIndex::new(2), NodeIndex::new(4)));
+
+    for edges in graph.edges(NodeIndex::new(2)) {
+        println!("edges = {:?}", edges);
+    }
+
+    graph.remove_node(NodeIndex::new(4));
 
     for edges in graph.edges(NodeIndex::new(2)) {
         println!("edges = {:?}", edges);
