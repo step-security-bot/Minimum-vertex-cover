@@ -7,6 +7,7 @@ use crate::graph_utils::is_vertex_cover;
 
 pub mod graph_utils;
 pub mod format;
+pub mod branch_and_bound;
 
 /// Naïve algorithm that searches for the minimum vertex cover of a given graph.
 ///
@@ -34,7 +35,7 @@ pub mod format;
 /// ```
 pub fn naive_search(graph: &MatrixGraph<u64, (), Undirected>) -> Option<Vec<u64>> {
     let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
-    let subsets = get_subsets(&possible_values);
+    let subsets : Vec<Vec<u64>> = get_subsets(&possible_values);
 
     for subset in subsets {
         if is_vertex_cover(graph, &subset) {

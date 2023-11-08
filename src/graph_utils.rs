@@ -41,7 +41,6 @@ pub fn is_vertex_cover(graph: &MatrixGraph<u64, (), Undirected>, vertex_cover: &
     true
 }
 
-
 /// Load a graph from a DIMACS .col file.
 ///
 /// The format of the file is the following:
@@ -202,6 +201,74 @@ pub fn edges(graph: &MatrixGraph<u64, (), Undirected>) -> EdgeIterator {
     }
 }
 
+/// Returns the vertex with the maximum degree in the graph.
+///
+/// # Example
+/// ```rust
+/// use petgraph::matrix_graph::MatrixGraph;
+/// use petgraph::Undirected;
+/// use petgraph::stable_graph::NodeIndex;
+///
+/// use vertex::graph_utils::get_vertex_with_max_degree;
+///
+/// let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+/// for i in 0..10 {
+///    graph.add_node(i);
+/// }
+/// for i in 0..9 {
+///   graph.add_edge(NodeIndex::new(i), NodeIndex::new(i + 1), ())
+/// }
+/// graph.add_edge(NodeIndex::new(0), NodeIndex::new(9), ());
+/// graph.add_edge(NodeIndex::new(0), NodeIndex::new(8), ());
+///
+/// assert_eq!(get_vertex_with_max_degree(&graph), 0);
+/// ```
+pub fn get_vertex_with_max_degree(graph: &MatrixGraph<u64, (), Undirected>) -> usize {
+    let mut max_degree = 0;
+    let mut max_degree_vertex = 0;
+    for vertex in 0..graph.node_count() {
+        let degree = graph.neighbors(NodeIndex::new(vertex)).count();
+        if degree > max_degree {
+            max_degree = degree;
+            max_degree_vertex = vertex;
+        }
+    }
+    max_degree_vertex
+}
+
+/// Since clone is not implemented for MatrixGraph, this function manually copies the graph.
+/// It iterates over the nodes and edges of the graph and adds them to the copy.
+///
+/// # Example
+/// ```rust
+/// use petgraph::matrix_graph::MatrixGraph;
+/// use petgraph::Undirected;
+/// use petgraph::stable_graph::NodeIndex;
+///
+/// use vertex::graph_utils::copy_graph;
+///
+/// let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+/// for i in 0..10 {
+///   graph.add_node(i);
+/// }
+/// for i in 0..9 {
+///  graph.add_edge(NodeIndex::new(i), NodeIndex::new(i + 1), ())
+/// }
+///
+/// let copy = copy_graph(&graph);
+/// assert_eq!(copy.node_count(), 10);
+/// assert_eq!(copy.edge_count(), 9);
+/// ```
+pub fn copy_graph(graph: &MatrixGraph<u64, (), Undirected>) -> MatrixGraph<u64, (), Undirected> {
+    let mut copy = MatrixGraph::<u64, (), Undirected>::new_undirected();
+    for i in 0..graph.node_count() {
+        copy.add_node(i as u64);
+    }
+    for (u, v) in edges(&graph) {
+        copy.add_edge(NodeIndex::new(u), NodeIndex::new(v), ());
+    }
+    copy
+}
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct GraphInfo {
@@ -326,6 +393,46 @@ mod graph_utils_tests {
         assert!(is_vertex_cover(&graph, &vertex_cover));
     }
 
+    #[test]
+    fn test_get_vertex_with_max_degree() {
+        let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+        for i in 0..10 {
+            graph.add_node(i);
+        }
+        for i in 0..9 {
+            graph.add_edge(NodeIndex::new(i), NodeIndex::new(i + 1), ())
+        }
+        graph.add_edge(NodeIndex::new(0), NodeIndex::new(9), ());
+        graph.add_edge(NodeIndex::new(0), NodeIndex::new(8), ());
+        graph.add_edge(NodeIndex::new(0), NodeIndex::new(7), ());
+        assert_eq!(get_vertex_with_max_degree(&graph), 0);
+    }
+
+    #[test]
+    fn test_copy_graph() {
+        let mut graph = MatrixGraph::<u64, (), Undirected>::new_undirected();
+        for i in 0..10 {
+            graph.add_node(i);
+        }
+        for i in 0..9 {
+            graph.add_edge(NodeIndex::new(i), NodeIndex::new(i + 1), ())
+        }
+
+        let mut copy = copy_graph(&graph);
+        graph.remove_edge(NodeIndex::new(0), NodeIndex::new(1));
+        assert_eq!(graph.edge_count(), 8);
+        assert_eq!(copy.edge_count(), 9);
+
+        graph.remove_node(NodeIndex::new(0));
+        assert_eq!(graph.node_count(), 9);
+        assert_eq!(copy.node_count(), 10);
+
+        copy.remove_node(NodeIndex::new(0));
+        copy.remove_node(NodeIndex::new(1));
+        assert_eq!(copy.node_count(), 8);
+        assert_eq!(graph.node_count(), 9);
+
+    }
     #[test]
     fn test_load_clq_file() {
         let graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
