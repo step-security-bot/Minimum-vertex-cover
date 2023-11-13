@@ -1,0 +1,9 @@
+c File test_cycle_5.clq
+c Symbol : C_5
+c Comment : I used the same layout as in the BB paper
+p edge 5 5
+e 1 2
+e 1 3
+e 2 4
+e 3 5
+e 4 5

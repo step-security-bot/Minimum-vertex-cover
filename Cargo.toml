@@ -10,6 +10,7 @@ name="vertex"
 path="src/lib.rs"
 
 [dependencies]
+round = "0.1.0"
 graphalgs = "0.1.1"
 petgraph = "0.6.4"
 graph = { git = "https://github.com/umons-dept-comp-sci/PhoegRustGraph.git" }

@@ -42,12 +42,12 @@
   format: clq
   order: 400
   size: 59786
-  mvc_val: 0
+  mvc_val: 393
 - id: brock400_4.clq
   format: clq
   order: 400
   size: 59765
-  mvc_val: 0
+  mvc_val: 393
 - id: brock800_2.clq
   format: clq
   order: 800
@@ -67,22 +67,22 @@
   format: clq
   order: 250
   size: 27984
-  mvc_val: 0
+  mvc_val: 245
 - id: C500.9.clq
   format: clq
   order: 500
   size: 112332
-  mvc_val: 0
+  mvc_val: 495
 - id: C1000.9.clq
   format: clq
   order: 1000
   size: 450079
-  mvc_val: 0
+  mvc_val: 994
 - id: C2000.5.clq
   format: clq
   order: 2000
   size: 999836
-  mvc_val: 0
+  mvc_val: 1994
 - id: C2000.9.clq
   format: clq
   order: 2000
@@ -107,17 +107,17 @@
   format: clq
   order: 400
   size: 71820
-  mvc_val: 0
+  mvc_val: 392
 - id: gen400_p0.9_65.clq
   format: clq
   order: 400
   size: 71820
-  mvc_val: 0
+  mvc_val: 393
 - id: gen400_p0.9_75.clq
   format: clq
   order: 400
   size: 71820
-  mvc_val: 0
+  mvc_val: 394
 - id: hamming8-4.clq
   format: clq
   order: 256
@@ -127,7 +127,7 @@
   format: clq
   order: 1024
   size: 434176
-  mvc_val: 0
+  mvc_val: 1004
 - id: keller4.clq
   format: clq
   order: 171
@@ -137,32 +137,32 @@
   format: clq
   order: 776
   size: 225990
-  mvc_val: 0
+  mvc_val: 745
 - id: keller6.clq
   format: clq
   order: 3361
   size: 4619898
-  mvc_val: 0
+  mvc_val: 3298
 - id: MANN_a27.clq
   format: clq
   order: 378
   size: 70551
-  mvc_val: 0
+  mvc_val: 375
 - id: MANN_a45.clq
   format: clq
   order: 1035
   size: 533115
-  mvc_val: 0
+  mvc_val: 1032
 - id: MANN_a81.clq
   format: clq
   order: 3321
   size: 5506380
-  mvc_val: 0
+  mvc_val: 3318
 - id: p_hat300-1.clq
   format: clq
   order: 300
   size: 10933
-  mvc_val: 0
+  mvc_val: 292
 - id: p_hat300-2.clq
   format: clq
   order: 300
@@ -172,7 +172,7 @@
   format: clq
   order: 300
   size: 33390
-  mvc_val: 0
+  mvc_val: 291
 - id: p_hat700-1.clq
   format: clq
   order: 700

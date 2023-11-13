@@ -198,7 +198,7 @@ pub fn edges(graph: &UnGraphMap<u64, ()>) -> EdgeIterator {
     }
 }
 
-/// Returns the vertex with the maximum degree in the graph.
+/// Returns the vertex with the maximum degree in the graph and its degree.
 ///
 /// # Example
 /// ```rust
@@ -216,9 +216,10 @@ pub fn edges(graph: &UnGraphMap<u64, ()>) -> EdgeIterator {
 /// graph.add_edge(0, 9, ());
 /// graph.add_edge(0, 8, ());
 ///
-/// assert_eq!(get_vertex_with_max_degree(&graph), 0);
+/// assert_eq!(get_vertex_with_max_degree(&graph).0, 0);
+/// assert_eq!(get_vertex_with_max_degree(&graph).1, 3);
 /// ```
-pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>) -> u64 {
+pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>) -> (u64, usize) {
     let mut max_degree = 0;
     let mut max_degree_vertex = 0;
     for vertex in graph.nodes(){
@@ -228,7 +229,7 @@ pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>) -> u64 {
             max_degree_vertex = vertex;
         }
     }
-    max_degree_vertex
+    (max_degree_vertex, max_degree)
 }
 
 /// Since clone is not implemented for MatrixGraph, this function manually copies the graph.
@@ -279,9 +280,6 @@ struct GraphInfo {
 ///
 /// # Panics
 /// Panics if the file cannot be opened or the graph cannot be written to the file.
-///
-/// # Example
-/// TODO : add example
 pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, path: &str) {
     let file = File::open(path)
         .expect(format!("Unable to open file {:?}", path).as_str());
@@ -323,7 +321,15 @@ pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, pa
 /// - The graph id cannot be updated (error while writing to the file)
 ///
 /// # example
-/// TODO : add example
+/// ```
+/// use vertex::graph_utils::update_mvc_value;
+///
+/// update_mvc_value("test.clq", 3, Some("src/resources/graph_data.yml"));
+/// // The value of the minimum vertex cover for the test.clq graph is now 3
+///
+/// update_mvc_value("test.clq", 2, None);
+/// // The value of the minimum vertex cover for the test.clq graph is now 2
+/// ```
 pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
     let path = match path {
         Some(path) => path,
@@ -351,6 +357,84 @@ pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
         .expect(format!("Unable to create file {:?}", path).as_str());
     file.write_all(serde_yaml::to_string(&data).unwrap().as_bytes())
         .expect(format!("Unable to write file to {:?}", path).as_str());
+}
+
+/// Check if a given value is the optimal value for a given graph id.
+/// The optimal value is the value stored in the yaml file. So, if the value in the yaml file is wrong, this function will return the wrong result.
+///
+/// # Parameters
+/// - id : the id of the graph (ex: test.clq)
+/// - val : the value to check
+/// - path : the path to the yaml file containing the graph info (optionnal-> None or Some(path))
+///
+/// # Panics
+/// Panics if :
+/// - The file cannot be opened
+/// - The graph id is not in the file
+///
+/// # example
+/// ```
+/// use vertex::graph_utils::is_optimal_value;
+///
+/// assert!(is_optimal_value("test.clq", 3, None));
+/// assert!(!is_optimal_value("test.clq", 2, None));
+/// ```
+pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> bool {
+    let path = match path {
+        Some(path) => path,
+        None => "src/resources/graph_data.yml",
+    };
+    let file = File::open(path)
+        .expect(format!("Unable to open file {:?}", path).as_str());
+
+    let data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
+
+    for info in data.iter() {
+        if info.id == id {
+            if info.mvc_val == val {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    panic!("Graph {:?} not found in {:?} to check if {:?} is optimal", id, path, val);
+}
+
+/// Get the optimal value for a given graph id.
+/// The optimal value is the value stored in the yaml file. So, if the value in the yaml file is wrong,
+/// this function will return the wrong result.
+///
+/// # Parameters
+/// - id : the id of the graph (ex: test.clq)
+/// - path : the path to the yaml file containing the graph info (optionnal-> None or Some(path))
+///
+/// # Panics
+/// Panics if the file cannot be opened
+///
+/// # example
+/// ```
+/// use vertex::graph_utils::get_optimal_value;
+///
+/// assert_eq!(get_optimal_value("test.clq", None), Some(3));
+/// assert_eq!(get_optimal_value("unknown_graph.clq", None), None);
+/// ```
+pub fn get_optimal_value(id: &str, path: Option<&str>) -> Option<u64> {
+    let path = match path {
+        Some(path) => path,
+        None => "src/resources/graph_data.yml",
+    };
+    let file = File::open(path)
+        .expect(format!("Unable to open file {:?}", path).as_str());
+
+    let data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
+
+    for info in data.iter() {
+        if info.id == id {
+            return Some(info.mvc_val);
+        }
+    }
+    return None;
 }
 
 #[cfg(test)]
@@ -412,7 +496,8 @@ mod graph_utils_tests {
         graph.add_edge(0, 9, ());
         graph.add_edge(0, 8, ());
         graph.add_edge(0, 7, ());
-        assert_eq!(get_vertex_with_max_degree(&graph), 0);
+        assert_eq!(get_vertex_with_max_degree(&graph).0, 0);
+        assert_eq!(get_vertex_with_max_degree(&graph).1, 4);
     }
 
     #[test]
@@ -425,7 +510,8 @@ mod graph_utils_tests {
         graph.add_edge(4, 5, ());
         graph.add_edge(5, 6, ());
 
-        assert_eq!(get_vertex_with_max_degree(&graph), 4);
+        assert_eq!(get_vertex_with_max_degree(&graph).0, 4);
+        assert_eq!(get_vertex_with_max_degree(&graph).1, 2);
     }
 
     #[test]
