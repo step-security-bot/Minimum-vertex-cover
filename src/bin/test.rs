@@ -2,11 +2,16 @@ use petgraph::graph::NodeIndex;
 use petgraph::graphmap::GraphMap;
 use petgraph::matrix_graph::MatrixGraph;
 use petgraph::Undirected;
+use vertex::graph_utils::load_clq_file;
 
 fn main() {
     graph_map();
 
-    // matrix();
+    let graph = load_clq_file("src/resources/graphs/test2.clq").unwrap();
+    println!("Does graph has edge 5 -6 ? {}", graph.contains_edge(5, 6));
+    for vertex in graph.nodes() {
+        println!("vertex = {:?}", vertex);
+    }
 }
 
 

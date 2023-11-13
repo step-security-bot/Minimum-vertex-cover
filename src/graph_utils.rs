@@ -190,6 +190,7 @@ impl Iterator for EdgeIterator<'_> {
 /// ```
 ///
 pub fn edges(graph: &UnGraphMap<u64, ()>) -> EdgeIterator {
+    // TODO : regarder ça parce qu'il ne parcourt pas toutes les arêtes
     EdgeIterator {
         graph,
         i: 0,
@@ -217,11 +218,11 @@ pub fn edges(graph: &UnGraphMap<u64, ()>) -> EdgeIterator {
 ///
 /// assert_eq!(get_vertex_with_max_degree(&graph), 0);
 /// ```
-pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>) -> usize {
+pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>) -> u64 {
     let mut max_degree = 0;
     let mut max_degree_vertex = 0;
-    for vertex in 0..graph.node_count() {
-        let degree = graph.neighbors(vertex as u64).count();
+    for vertex in graph.nodes(){
+        let degree = graph.neighbors(vertex).count();
         if degree > max_degree {
             max_degree = degree;
             max_degree_vertex = vertex;
@@ -253,11 +254,11 @@ pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>) -> usize {
 /// ```
 pub fn copy_graph(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
     let mut copy = UnGraphMap::<u64, ()>::new();
-    for i in 0..graph.node_count() {
-        copy.add_node(i as u64);
+    for i in graph.nodes() {
+        copy.add_node(i);
     }
-    for (u, v) in edges(&graph) {
-        copy.add_edge(u, v, ());
+    for edge in graph.all_edges() {
+        copy.add_edge(edge.0, edge.1, ());
     }
     copy
 }
@@ -368,6 +369,11 @@ mod graph_utils_tests {
     }
 
     #[test]
+    fn test_edges_iterate_over_all_edges() {
+        // TODO : Implémenter ceci avec l'exemple du test2.clq (c'est ça qui posait problème)
+    }
+
+    #[test]
     fn test_is_vertex_cover() {
         let mut graph = UnGraphMap::<u64, ()>::new();
         for i in 0..3 {
@@ -398,6 +404,19 @@ mod graph_utils_tests {
         graph.add_edge(0, 8, ());
         graph.add_edge(0, 7, ());
         assert_eq!(get_vertex_with_max_degree(&graph), 0);
+    }
+
+    #[test]
+    fn test_get_vertex_with_max_degree2() {
+        let mut graph = UnGraphMap::<u64, ()>::new();
+        for i in 3..7 {
+            graph.add_node(i);
+        }
+        graph.add_edge(3, 4, ());
+        graph.add_edge(4, 5, ());
+        graph.add_edge(5, 6, ());
+
+        assert_eq!(get_vertex_with_max_degree(&graph), 4);
     }
 
     #[test]
