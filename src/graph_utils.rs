@@ -311,6 +311,11 @@ pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, pa
 
 /// Update the known value of the minimum vertex cover for a given graph id.
 ///
+/// # Parameters
+/// - id : the id of the graph (ex: test.clq)
+/// - mvc_val : the new value of the minimum vertex cover
+/// - path : the path to the yaml file containing the graph info (optionnal-> None or Some(path))
+///
 /// # Panics
 /// Panics if :
 /// - The file cannot be opened
@@ -319,7 +324,11 @@ pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, pa
 ///
 /// # example
 /// TODO : add example
-pub fn update_mvc_value(id: &str, mvc_val: u64, path: &str) {
+pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
+    let path = match path {
+        Some(path) => path,
+        None => "src/resources/graph_data.yml",
+    };
     let file = File::open(path)
         .expect(format!("Unable to open file {:?}", path).as_str());
 

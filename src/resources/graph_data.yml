@@ -22,7 +22,12 @@
   format: col
   order: 5
   size: 6
-  mvc_val: 0
+  mvc_val: 3
+- id: test2.clq
+  format: clq
+  order: 8
+  size: 14
+  mvc_val: 5
 - id: brock200_2.clq
   format: clq
   order: 200
