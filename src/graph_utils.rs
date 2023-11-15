@@ -324,11 +324,11 @@ pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, pa
 /// ```
 /// use vertex::graph_utils::update_mvc_value;
 ///
-/// update_mvc_value("test.clq", 3, Some("src/resources/graph_data.yml"));
-/// // The value of the minimum vertex cover for the test.clq graph is now 3
-///
-/// update_mvc_value("test.clq", 2, None);
+/// update_mvc_value("test.clq", 2, Some("src/resources/graph_data.yml"));
 /// // The value of the minimum vertex cover for the test.clq graph is now 2
+///
+/// update_mvc_value("test.clq", 3, None);
+/// // The value of the minimum vertex cover for the test.clq graph is now 3
 /// ```
 pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
     let path = match path {

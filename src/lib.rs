@@ -2,7 +2,7 @@ extern crate graph;
 
 use petgraph::prelude::UnGraphMap;
 
-use crate::graph_utils::is_vertex_cover;
+use crate::graph_utils::{get_optimal_value, is_optimal_value, is_vertex_cover};
 
 pub mod graph_utils;
 pub mod format;
@@ -27,19 +27,51 @@ pub mod branch_and_bound;
 /// graph.add_edge(2, 0, ());
 /// graph.add_edge(2, 3, ());
 ///
-/// let expected_vertex_cover = vec![0, 2];
-/// assert_eq!(naive_search(&graph), Some(expected_vertex_cover));
+/// let expected_vertex_cover = 2; //[0, 2] or [1, 2]
+/// assert_eq!(naive_search(&graph), expected_vertex_cover);
 /// ```
-pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> Option<Vec<u64>> {
+pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> u64 {
     let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
     let subsets : Vec<Vec<u64>> = get_subsets(&possible_values);
 
     for subset in subsets {
         if is_vertex_cover(graph, &subset) {
-            return Some(subset);
+            return subset.len() as u64;
         }
     }
-    None
+    0
+}
+
+/// Run a given algorithm on a given graph and print the result. It is the default function when you want
+/// to test your algorithm on a certain graph. It prints the result and tell you if it is optimal or not based
+/// on the data in the yaml file.
+/// The algorithm must take an UnGraphMap as input and return a u64.
+///
+/// # Example
+/// ```rust
+/// use petgraph::prelude::UnGraphMap;use vertex::graph_utils::load_clq_file;
+/// use vertex::{naive_search, run_algorithm};
+///
+/// let mut graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
+/// run_algorithm("test.clq", &graph, &naive_search);
+/// ```
+pub fn run_algorithm(graph_id: &str,
+                     graph: &UnGraphMap<u64, ()>,
+                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> u64) {
+    println!("graph id = {}", graph_id);
+    let res = f(graph);
+    println!("Minimum vertex cover for the {:?} graph = {}", graph_id, res);
+    let is_opt = is_optimal_value(graph_id, res, None);
+    if is_opt {
+        println!("The value is optimal (as long as the data is correct in the yaml file)");
+    } else {
+        let true_opt = get_optimal_value(graph_id, None).unwrap_or(0);
+        if true_opt == 0 {
+            println!("The correct value is unknown");
+        } else {
+            println!("The value is not optimal and the correct value is {}", true_opt);
+        }
+    }
 }
 
 
@@ -69,8 +101,8 @@ mod  algorithms_tests {
         graph.add_edge(2, 0, ());
         graph.add_edge(2, 3, ());
 
-        let expected_vertex_cover = vec![0, 2];
-        assert_eq!(naive_search(&graph), Some(expected_vertex_cover));
+        let expected_vertex_cover = 2;
+        assert_eq!(naive_search(&graph), expected_vertex_cover);
     }
 
     #[test]
