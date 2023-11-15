@@ -1,5 +1,7 @@
 extern crate graph;
 
+use std::fmt::Display;
+use std::time::Duration;
 use petgraph::prelude::UnGraphMap;
 
 use crate::graph_utils::{get_optimal_value, is_optimal_value, is_vertex_cover};
@@ -7,6 +9,38 @@ use crate::graph_utils::{get_optimal_value, is_optimal_value, is_vertex_cover};
 pub mod graph_utils;
 pub mod format;
 pub mod branch_and_bound;
+
+
+pub struct ElapseTime {
+    pub duration: Duration,
+    pub min: u128,
+    pub sec: u128,
+    pub ms: u128,
+    pub micro: u128,
+}
+
+impl ElapseTime {
+    pub fn new(duration: Duration) -> ElapseTime {
+        let elapsed = duration.as_micros();
+        let min = elapsed / 60_000_000;
+        let sec = (elapsed / 1_000_000) % 60;
+        let ms = (elapsed / 1_000) % 1_000;
+        let micro = elapsed % 1_000;
+        ElapseTime {
+            duration,
+            min,
+            sec,
+            ms,
+            micro,
+        }
+    }
+}
+
+impl Display for ElapseTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}min {}s {}ms {}µs", self.min, self.sec, self.ms, self.micro)
+    }
+}
 
 /// Naïve algorithm that searches for the minimum vertex cover of a given graph.
 ///
@@ -57,9 +91,14 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> u64 {
 /// ```
 pub fn run_algorithm(graph_id: &str,
                      graph: &UnGraphMap<u64, ()>,
-                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> u64) {
-    println!("graph id = {}", graph_id);
+                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> u64) -> ElapseTime{
+    use std::time::Instant;
+    let now = Instant::now();
+
     let res = f(graph);
+
+    let elapsed = ElapseTime::new(now.elapsed());
+    println!("{}", elapsed);
     println!("Minimum vertex cover for the {:?} graph = {}", graph_id, res);
     let is_opt = is_optimal_value(graph_id, res, None);
     if is_opt {
@@ -72,6 +111,7 @@ pub fn run_algorithm(graph_id: &str,
             println!("The value is not optimal and the correct value is {}", true_opt);
         }
     }
+    return elapsed;
 }
 
 
