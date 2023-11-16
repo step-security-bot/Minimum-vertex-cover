@@ -90,6 +90,8 @@ impl Display for Result {
 /// The algorithm list all possible subsets of the vertices of the graph and check if each
 /// subset is a vertex cover going from the smallest subset to the largest one.
 ///
+/// This algorithm can be used on any graph but the subset size is capped at around 100 vertexes.
+///
 /// # Example
 /// ```rust
 /// use petgraph::prelude::UnGraphMap;
@@ -109,16 +111,18 @@ impl Display for Result {
 /// ```
 pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> u64 {
     let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
-    let subsets: Vec<Vec<u64>> = get_subsets(&possible_values);
-    println!("subsets len = {}", subsets.len());
-    for subset in subsets {
-        println!("subset len = {}", subset.len());
-
-        if is_vertex_cover(graph, &subset) {
-            return subset.len() as u64;
+    let mut found = false;
+    let mut res = 0;
+    for subset in get_subsets(&possible_values) {
+        println!("{}", subset.len());
+        if !found || res > subset.len() as u64 {
+            if is_vertex_cover(graph, &subset) {
+                res = subset.len() as u64;
+                found = true;
+            }
         }
     }
-    0
+    res
 }
 
 /// Run a given algorithm on a given graph and print the result. It is the default function when you want
@@ -149,15 +153,43 @@ pub fn run_algorithm(graph_id: &str,
 }
 
 
-/// Generate all subsets of a given set. This subset is ordered by size.
-fn get_subsets<T>(s: &[T]) -> Vec<Vec<T>> where T: Clone {
-    let mut tmp: Vec<Vec<T>> = (0..2usize.pow(s.len() as u32)).map(|i| {
-        s.iter().enumerate().filter(|&(t, _)| (i >> t) % 2 == 1)
-            .map(|(_, element)| element.clone())
-            .collect()
-    }).collect();
-    tmp.sort_by(|a, b| a.len().cmp(&b.len()));
-    tmp
+pub struct SubsetIterator<T> where T: Clone {
+    pub set: Vec<T>,
+    pub n: usize,
+    pub n_times: usize,
+    pub i: u64,
+}
+
+impl<T> Iterator for SubsetIterator<T> where T: Clone {
+    type Item = Vec<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.i >= (1 << self.n) as u64 {
+            return None;
+        }
+        let mut subset: Vec<T> = Vec::new();
+        for j in 0..self.n {
+            if (self.i & (1 << j)) != 0 {
+                subset.push(self.set[j].clone());
+            }
+        }
+        self.i += 1;
+        Some(subset)
+    }
+}
+
+
+/// Returns an iterator over all the subsets of a given set. (The size of the set is capped at around 100)
+fn get_subsets<T>(s: &[T]) -> SubsetIterator<T> where T: Clone {
+    let n = s.len();
+
+    SubsetIterator {
+        set: s.to_vec(),
+        n,
+        n_times: 1 << n,
+        i: 1,
+    }
+
 }
 
 #[cfg(test)]
@@ -192,6 +224,10 @@ mod algorithms_tests {
             vec![2, 3],
             vec![1, 2, 3],
         ];
-        assert_eq!(get_subsets(&initial_set), expected_subset);
+        let expected_subset: Box<Vec<Vec<u64>>> = Box::new(expected_subset);
+        let out = get_subsets(&initial_set);
+        for val in out {
+            assert!(expected_subset.contains(&val));
+        }
     }
 }

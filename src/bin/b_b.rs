@@ -2,7 +2,7 @@ use std::env;
 
 use vertex;
 use vertex::branch_and_bound::solve;
-use vertex::graph_utils::load_clq_file;
+use vertex::graph_utils::{load_clq_file, update_mvc_value};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -18,6 +18,7 @@ fn main() {
             // Update value
             let res = vertex::run_algorithm(&args[1], &graph, &solve);
             println!("Result : {}", res);
+            update_mvc_value(&res.graph_id, res.value, None);
             return;
         }
         if args.len() == 3 && args[2] != "-u"{
