@@ -376,10 +376,10 @@ pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
 /// ```
 /// use vertex::graph_utils::is_optimal_value;
 ///
-/// assert!(is_optimal_value("test.clq", 3, None));
-/// assert!(!is_optimal_value("test.clq", 2, None));
+/// assert!(is_optimal_value("test.clq", 3, None).unwrap());
+/// assert!(!is_optimal_value("test.clq", 2, None).unwrap());
 /// ```
-pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> bool {
+pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Option<bool> {
     let path = match path {
         Some(path) => path,
         None => "src/resources/graph_data.yml",
@@ -391,14 +391,14 @@ pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> bool {
 
     for info in data.iter() {
         if info.id == id {
-            if info.mvc_val == val {
-                return true;
+            return if info.mvc_val == val {
+                Some(true)
             } else {
-                return false;
+                Some(false)
             }
         }
     }
-    panic!("Graph {:?} not found in {:?} to check if {:?} is optimal", id, path, val);
+    return None;
 }
 
 /// Get the optimal value for a given graph id.

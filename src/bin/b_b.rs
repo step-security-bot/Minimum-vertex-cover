@@ -6,19 +6,28 @@ use vertex::graph_utils::load_clq_file;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    match args.len() {
-        2 => {
-            let graph = match load_clq_file(&format!("src/resources/graphs/{}", args[1])) {
-                Ok(x) => x,
-                Err(e) => {
-                    println!("Error while loading graph {} \n {}", args[1] ,e);
-                    return;
-                },
-            };
-            vertex::run_algorithm(&args[1], &graph, &solve);
+    if args.len() >= 2 {
+        let graph = match load_clq_file(&format!("src/resources/graphs/{}", args[1])) {
+            Ok(x) => x,
+            Err(e) => {
+                println!("Error while loading graph : {}", e);
+                return;
+            }
+        };
+        if args.len() == 3 && args[2] == "-u" {
+            // Update value
+            let res = vertex::run_algorithm(&args[1], &graph, &solve);
+            println!("Result : {}", res);
+            return;
         }
-        _ => {
-            println!("Usage: cargo run [-r] --bin b_b <graph_name>");
+        if args.len() == 3 && args[2] != "-u"{
+            println!("Usage: cargo run [-r] --bin b_b <graph_name> [(do_update_val) -u]");
+            return;
         }
+        // Run algorithm without updating value
+        let res = vertex::run_algorithm(&args[1], &graph, &solve);
+        println!("Result : {}", res);
+    } else {
+        println!("Usage: cargo run [-r] --bin b_b <graph_name> [(do_update_val) -u]");
     }
 }

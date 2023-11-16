@@ -32,12 +32,12 @@
   format: clq
   order: 200
   size: 9876
-  mvc_val: 0
+  mvc_val: 189
 - id: brock200_4.clq
   format: clq
   order: 200
   size: 13089
-  mvc_val: 0
+  mvc_val: 192
 - id: brock400_2.clq
   format: clq
   order: 400
@@ -62,7 +62,7 @@
   format: clq
   order: 125
   size: 6963
-  mvc_val: 0
+  mvc_val: 121
 - id: C250.9.clq
   format: clq
   order: 250
@@ -97,12 +97,12 @@
   format: clq
   order: 200
   size: 17910
-  mvc_val: 0
+  mvc_val: 195
 - id: gen200_p0.9_55.clq
   format: clq
   order: 200
   size: 17910
-  mvc_val: 0
+  mvc_val: 195
 - id: gen400_p0.9_55.clq
   format: clq
   order: 400
@@ -122,7 +122,7 @@
   format: clq
   order: 256
   size: 20864
-  mvc_val: 0
+  mvc_val: 240
 - id: hamming10-4.clq
   format: clq
   order: 1024

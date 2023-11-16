@@ -2,6 +2,7 @@ extern crate graph;
 
 use std::fmt::Display;
 use std::time::Duration;
+
 use petgraph::prelude::UnGraphMap;
 
 use crate::graph_utils::{get_optimal_value, is_optimal_value, is_vertex_cover};
@@ -42,6 +43,48 @@ impl Display for ElapseTime {
     }
 }
 
+pub struct Result {
+    pub graph_id: String,
+    pub value: u64,
+    pub is_optimal: Option<bool>,
+    pub time: ElapseTime,
+}
+
+impl Result {
+    pub fn new(graph_id: String, value: u64, time: ElapseTime) -> Result {
+        let is_optimal = is_optimal_value(&graph_id, value, None);
+        Result {
+            graph_id,
+            value,
+            is_optimal,
+            time,
+        }
+    }
+}
+
+impl Display for Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let opt_message = {
+            if !self.is_optimal.is_none() {
+                if self.is_optimal.unwrap() {
+                    "The value is optimal (as long as the data is correct in the yaml file)".to_string()
+                } else {
+                    let true_opt = get_optimal_value(&self.graph_id, None).unwrap_or(0);
+                    format!("The value is not optimal and the correct value is {}", true_opt).to_string()
+                }
+            } else {
+                "The graph is not in the yaml file".to_string()
+            }
+        };
+
+        write!(f, "Minimum vertex cover for the {:?} graph = {}\n{}\nTime taken by the algorithm : {}",
+               self.graph_id,
+               self.value,
+               opt_message,
+               self.time)
+    }
+}
+
 /// Naïve algorithm that searches for the minimum vertex cover of a given graph.
 ///
 /// The algorithm list all possible subsets of the vertices of the graph and check if each
@@ -66,9 +109,11 @@ impl Display for ElapseTime {
 /// ```
 pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> u64 {
     let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
-    let subsets : Vec<Vec<u64>> = get_subsets(&possible_values);
-
+    let subsets: Vec<Vec<u64>> = get_subsets(&possible_values);
+    println!("subsets len = {}", subsets.len());
     for subset in subsets {
+        println!("subset len = {}", subset.len());
+
         if is_vertex_cover(graph, &subset) {
             return subset.len() as u64;
         }
@@ -87,31 +132,20 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> u64 {
 /// use vertex::{naive_search, run_algorithm};
 ///
 /// let mut graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
-/// run_algorithm("test.clq", &graph, &naive_search);
+/// let res = run_algorithm("test.clq", &graph, &naive_search);
+/// println!("{}", res);
 /// ```
 pub fn run_algorithm(graph_id: &str,
                      graph: &UnGraphMap<u64, ()>,
-                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> u64) -> ElapseTime{
+                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> u64) -> Result {
     use std::time::Instant;
     let now = Instant::now();
 
     let res = f(graph);
 
     let elapsed = ElapseTime::new(now.elapsed());
-    println!("{}", elapsed);
-    println!("Minimum vertex cover for the {:?} graph = {}", graph_id, res);
-    let is_opt = is_optimal_value(graph_id, res, None);
-    if is_opt {
-        println!("The value is optimal (as long as the data is correct in the yaml file)");
-    } else {
-        let true_opt = get_optimal_value(graph_id, None).unwrap_or(0);
-        if true_opt == 0 {
-            println!("The correct value is unknown");
-        } else {
-            println!("The value is not optimal and the correct value is {}", true_opt);
-        }
-    }
-    return elapsed;
+    let res = Result::new(graph_id.to_string(),res, elapsed);
+    return res;
 }
 
 
@@ -127,7 +161,7 @@ fn get_subsets<T>(s: &[T]) -> Vec<Vec<T>> where T: Clone {
 }
 
 #[cfg(test)]
-mod  algorithms_tests {
+mod algorithms_tests {
     use super::*;
 
     #[test]
@@ -156,7 +190,7 @@ mod  algorithms_tests {
             vec![1, 2],
             vec![1, 3],
             vec![2, 3],
-            vec![1, 2, 3]
+            vec![1, 2, 3],
         ];
         assert_eq!(get_subsets(&initial_set), expected_subset);
     }
