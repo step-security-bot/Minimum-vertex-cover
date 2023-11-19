@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "graph",
  "graphalgs",
+ "heuristic-graph-coloring",
  "petgraph",
  "round",
  "serde",
@@ -134,6 +135,12 @@ name = "hashbrown"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dfda62a12f55daeae5015f81b0baea145391cb4520f86c248fc615d72640d12"
+
+[[package]]
+name = "heuristic-graph-coloring"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49b668274fa5581eb527cef09a3e33028f8edee0faa6fa7853eff3271f0030f7"
 
 [[package]]
 name = "indexmap"

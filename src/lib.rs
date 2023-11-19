@@ -114,7 +114,6 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> u64 {
     let mut found = false;
     let mut res = 0;
     for subset in get_subsets(&possible_values) {
-        println!("{}", subset.len());
         if !found || res > subset.len() as u64 {
             if is_vertex_cover(graph, &subset) {
                 res = subset.len() as u64;

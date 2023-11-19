@@ -32,7 +32,7 @@ use serde::{Deserialize, Serialize};
 /// assert!(is_vertex_cover(&graph, &vertex_cover));
 /// ```
 pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &Vec<u64>) -> bool {
-    for (i, j) in edges(graph) {
+    for (i, j, _) in graph.all_edges() {
         if !vertex_cover.contains(&(i)) && !vertex_cover.contains(&(j)) {
             return false;
         }
@@ -127,74 +127,10 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
     Ok(g)
 }
 
-pub struct EdgeIterator<'a> {
-    pub graph: &'a UnGraphMap<u64, ()>,
-    // We are going to iterate over the upper triangle of the adjacency matrix (i, j)
-    pub i: u64,
-    // current left vertex
-    pub j: u64, // current right vertex
-}
-
-impl EdgeIterator<'_> {
-    fn next_edge(&mut self) {
-        self.j += 1;
-        if self.j == self.graph.node_count() as u64 {
-            self.i += 1;
-            self.j = self.i + 1;
-        }
-    }
-}
-
-impl Iterator for EdgeIterator<'_> {
-    type Item = (u64, u64);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let n = self.graph.node_count() as u64;
-        if n > 1 {
-            self.next_edge();
-            while self.i < n - 1 && !self.graph.contains_edge(
-                self.i,
-                self.j) {
-                self.next_edge();
-            }
-            if self.i < n - 1 {
-                return Some((self.i, self.j));
-            }
-        }
-        None
-    }
-}
-
-/// Returns an Iterator over the edges of the graph.
-///
-/// # Example
-/// ```rust
-/// use petgraph::prelude::UnGraphMap;
-/// use vertex::graph_utils::edges;
-///
-/// let mut graph = UnGraphMap::<u64, ()>::new();
-/// for i in 0..10 {
-///     graph.add_node(i);
-/// }
-/// for i in 0..9 {
-///     graph.add_edge(i, i+1, ());
-/// }
-///
-/// let mut i = 0;
-/// for (u, v) in edges(&graph) {
-///     assert_eq!(u, i); // = i
-///     assert_eq!(v, i + 1); // = j
-///     i += 1;
-/// }
-/// assert_eq!(i, graph.edge_count() as u64);
-/// ```
-///
-pub fn edges(graph: &UnGraphMap<u64, ()>) -> EdgeIterator {
-    // TODO : regarder ça parce qu'il ne parcourt pas toutes les arêtes
-    EdgeIterator {
-        graph,
-        i: 0,
-        j: 0,
+pub fn print_clq_file(graph: &UnGraphMap<u64, ()>) {
+    println!("p edge {} {}", graph.node_count(), graph.edge_count());
+    for (i, j, _) in graph.all_edges() {
+        println!("e {} {}", i+1, j+1);
     }
 }
 
@@ -440,26 +376,6 @@ pub fn get_optimal_value(id: &str, path: Option<&str>) -> Option<u64> {
 #[cfg(test)]
 mod graph_utils_tests {
     use super::*;
-
-    #[test]
-    fn test_edge_iterator() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
-        for i in 0..10 {
-            graph.add_node(i);
-        }
-
-        for i in 0..9 {
-            graph.add_edge(i, i + 1, ());
-        }
-
-        let mut i = 0;
-        for (u, v) in edges(&graph) {
-            assert_eq!(u, i); // = i
-            assert_eq!(v, i + 1); // = j
-            i += 1;
-        }
-        assert_eq!(i, graph.edge_count() as u64);
-    }
 
     #[test]
     fn test_edges_iterate_over_all_edges() {
