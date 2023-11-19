@@ -1,9 +1,12 @@
 use std::error::Error;
+use std::fmt::Debug;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 
 use petgraph::prelude::UnGraphMap;
 use serde::{Deserialize, Serialize};
+use serde_yaml::{Sequence, Value};
+use crate::ElapseTime;
 
 /// Check if a given vertex cover is a vertex cover of a given graph.
 ///
@@ -110,7 +113,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
                 let i = values[1].parse::<u64>()? - 1;
                 let j = values[2].parse::<u64>()? - 1;
 
-                g.add_edge(i,  j, ());
+                g.add_edge(i, j, ());
                 edges += 1;
             }
             _ => {
@@ -130,7 +133,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
 pub fn print_clq_file(graph: &UnGraphMap<u64, ()>) {
     println!("p edge {} {}", graph.node_count(), graph.edge_count());
     for (i, j, _) in graph.all_edges() {
-        println!("e {} {}", i+1, j+1);
+        println!("e {} {}", i + 1, j + 1);
     }
 }
 
@@ -158,7 +161,7 @@ pub fn print_clq_file(graph: &UnGraphMap<u64, ()>) {
 pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>) -> (u64, usize) {
     let mut max_degree = 0;
     let mut max_degree_vertex = 0;
-    for vertex in graph.nodes(){
+    for vertex in graph.nodes() {
         let degree = graph.neighbors(vertex).count();
         if degree > max_degree {
             max_degree = degree;
@@ -201,12 +204,21 @@ pub fn copy_graph(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-struct GraphInfo {
-    id: String,
+pub struct GraphInfo {
+    pub id: String,
     format: String,
     order: usize,
     size: usize,
     mvc_val: u64,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct YamlTime {
+    date: String,
+    mvc_val: u64,
+    time: String,
+    algorithm: String,
+    comment: String,
 }
 
 /// Add the graph id with its format in the yaml file located at src/resources/graph_data.yml.
@@ -240,8 +252,27 @@ pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, pa
         .expect(format!("Unable to create file {:?}", path).as_str());
     file.write_all(serde_yaml::to_string(&data).unwrap().as_bytes())
         .expect(format!("Unable to write file to {:?}", path).as_str());
+
+    // When we add a graph to the yaml file, we also add it to the time file
+    add_graph_to_time_file(id);
 }
 
+fn add_graph_to_time_file(id: &str) {
+    let time_path = "src/resources/time_result.yml";
+    let mut file = File::open(time_path).expect("Could not open time file");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).expect("Could not read time file");
+
+    let time: Value = serde_yaml::from_str(&contents).expect("Could not parse time file");
+    let mut map = time.as_mapping().expect("Could not parse time file").clone();
+
+    let vec: Sequence = Vec::new();
+
+    map.insert(Value::String(id.to_string()), Value::Sequence(vec));
+
+    let mut file = File::create(time_path).expect("Could not open time file");
+    serde_yaml::to_writer(&mut file, &map).expect("Could not write time file");
+}
 
 /// Update the known value of the minimum vertex cover for a given graph id.
 ///
@@ -331,7 +362,7 @@ pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Option<bool> 
                 Some(true)
             } else {
                 Some(false)
-            }
+            };
         }
     }
     return None;
@@ -373,6 +404,76 @@ pub fn get_optimal_value(id: &str, path: Option<&str>) -> Option<u64> {
     return None;
 }
 
+pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, algorithm: &str, comment: &str) {
+    let path = "src/resources/time_result.yml";
+    let mut file = File::open(path)
+        .expect(format!("Unable to open file {:?}", path).as_str());
+    let mut content = String::new();
+    file.read_to_string(&mut content).expect("Could not read time file");
+
+    let content: Value = serde_yaml::from_str(&content).expect("Could not parse time file");
+    let mut map = content.as_mapping().expect("Could not parse time file").clone();
+
+    if !map.contains_key(id) {
+        panic!("Graph {:?} not found in {:?} to store the time", id, path);
+    }
+
+    let graph = match map.get(id) {
+        Some(graph) => graph.clone(),
+        None => panic!("Graph {:?} not found in {:?} to store the time", id, path),
+    };
+
+    let mut graph_data: Sequence = serde_yaml::from_value(graph).expect("File badly formatted, the content of the graph should be a vector");
+
+    let new_time = YamlTime {
+        date: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        mvc_val,
+        time: time.to_string(),
+        algorithm: algorithm.to_string(),
+        comment: comment.to_string(),
+    };
+
+    let as_value = serde_yaml::to_value(new_time).unwrap();
+    graph_data.push(as_value);
+
+    map.insert(Value::String(id.to_string()), Value::Sequence(graph_data));
+
+
+    // Update the file
+    let mut file = File::create(path)
+        .expect(format!("Unable to create file {:?}", path).as_str());
+    serde_yaml::to_writer(&mut file, &map).expect("Could not write time file");
+}
+
+pub fn get_time_data(id: &str) -> Vec<YamlTime> {
+    let path = "src/resources/time_result.yml";
+    let mut file = File::open(path)
+        .expect(format!("Unable to open file {:?}", path).as_str());
+    let mut content = String::new();
+    file.read_to_string(&mut content).expect("Could not read time file");
+
+    let content: Value = serde_yaml::from_str(&content).expect("Could not parse time file");
+    let map = content.as_mapping().expect("Could not parse time file").clone();
+
+    if !map.contains_key(id) {
+        panic!("Graph {:?} not found in {:?} to store the time", id, path);
+    }
+
+    let graph = match map.get(id) {
+        Some(graph) => graph.clone(),
+        None => panic!("Graph {:?} not found in {:?} to store the time", id, path),
+    };
+
+    let graph_data: Sequence = serde_yaml::from_value(graph).expect("File badly formatted, the content of the graph should be a vector");
+    let mut res: Vec<YamlTime> = Vec::new();
+
+    for time in graph_data.iter() {
+        let time: YamlTime = serde_yaml::from_value(time.clone()).expect("File badly formatted, the content of the vector should be a YamlTime");
+        res.push(time);
+    }
+    return res;
+}
+
 #[cfg(test)]
 mod graph_utils_tests {
     use super::*;
@@ -407,7 +508,7 @@ mod graph_utils_tests {
             graph.add_node(i);
         }
         for i in 0..9 {
-            graph.add_edge(i, i+1, ());
+            graph.add_edge(i, i + 1, ());
         }
         graph.add_edge(0, 9, ());
         graph.add_edge(0, 8, ());
@@ -437,7 +538,7 @@ mod graph_utils_tests {
             graph.add_node(i);
         }
         for i in 0..9 {
-            graph.add_edge(i, i+1, ());
+            graph.add_edge(i, i + 1, ());
         }
 
         let mut copy = copy_graph(&graph);
@@ -453,8 +554,8 @@ mod graph_utils_tests {
         copy.remove_node(1);
         assert_eq!(copy.node_count(), 8);
         assert_eq!(graph.node_count(), 9);
-
     }
+
     #[test]
     fn test_load_clq_file() {
         let graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
