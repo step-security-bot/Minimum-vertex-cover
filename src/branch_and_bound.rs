@@ -6,12 +6,15 @@ use petgraph::prelude::UnGraphMap;
 use crate::graph_utils::{copy_graph, get_vertex_with_max_degree};
 
 pub fn solve(graph: &UnGraphMap<u64, ()>) -> u64 {
+
+    let mut copy = copy_graph(graph);
     // Initialize the upper bound to the number of nodes in the graph
     // and the vertex cover found so far is empty
-    b_and_b(graph, graph.node_count() as u64, vec![])
+    b_and_b(graph, &mut copy, graph.node_count() as u64, vec![])
 }
 
 fn b_and_b(graph: &UnGraphMap<u64, ()>,
+           subgraph: &UnGraphMap<u64, ()>,
            upper_bound: u64,
            vertex_cover: Vec<u64>) -> u64 {
 
@@ -20,40 +23,51 @@ fn b_and_b(graph: &UnGraphMap<u64, ()>,
     //    return upper_bound;
     // }
     // If the graph is empty. (All edges have been covered)
-    if graph.edge_count() == 0 {
+    if subgraph.edge_count() == 0 {
         return vertex_cover.len() as u64;
     }
 
-    if vertex_cover.len() as u64 + max(deg_lb(graph), clq_lb(graph)) > upper_bound {
+    // let (v, max_deg) = get_vertex_with_max_degree(graph, None);
+    // let lb =   (graph.edge_count() / max_deg) as f64;
+    // let lb = lb.ceil() as u64;
+
+    let deg_lb = deg_lb(subgraph);
+    let clq_lb = clq_lb(subgraph);
+    let lb = max(deg_lb, clq_lb);
+
+    if vertex_cover.len() as u64 + lb >= upper_bound {
         return upper_bound;
     }
 
-    let v = get_vertex_with_max_degree(graph).0;
+    let v = get_vertex_with_max_degree(subgraph, None).0;
 
-    let mut graph_case1 = copy_graph(graph);
-    let mut graph_case2 = copy_graph(graph);
+    let mut subgraph = copy_graph(subgraph);
 
     // ====> First case <====
-    // - G \ N*(v)
-    // - C U N(v)
+    // - G \ {v}
+    // - C U v
     let mut vertex_cover_case1 = vertex_cover.clone();
 
-    for neighbor in graph.neighbors(v) {
-        vertex_cover_case1.push(neighbor);
-        graph_case1.remove_node(neighbor);
-    }
-    graph_case1.remove_node(v);
-    let res_case1 = b_and_b(&graph_case1,
+    // Removes v + edges from v to neighbor
+    subgraph.remove_node(v);
+    vertex_cover_case1.push(v);
+    let res_case1 = b_and_b(graph,
+                            &subgraph,
                             upper_bound,
                             vertex_cover_case1);
 
     // ====> Second case <====
-    // - G \ {v}
-    // - C U v
+    // - G \ N*(v)
+    // - C U N(v)
     let mut vertex_cover_case2 = vertex_cover.clone();
-    graph_case2.remove_node(v);
-    vertex_cover_case2.push(v);
-    let res_case2 = b_and_b(&graph_case2,
+
+    // Remove all neighbors of v + edges from neighbors to their neighbors
+    for neighbor in graph.neighbors(v) {
+        vertex_cover_case2.push(neighbor);
+        subgraph.remove_node(neighbor);
+    }
+    let res_case2 = b_and_b(graph,
+                            &subgraph,
                             min(upper_bound, res_case1),
                             vertex_cover_case2);
 
@@ -64,24 +78,29 @@ fn deg_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
     let size = graph.edge_count();
     let mut selected_vertexes = Vec::<u64>::new();
     let mut sum_degrees: usize = 0;
-    let mut g = copy_graph(graph);
+
 
     let mut working = true;
     while working {
-        let (max_degree_vertex, _vertex_degree) = get_vertex_with_max_degree(&g);
+        let (max_degree_vertex, _vertex_degree) = get_vertex_with_max_degree(graph, Some(&selected_vertexes));
         selected_vertexes.push(max_degree_vertex);
         sum_degrees += graph.neighbors(max_degree_vertex).count();
-        g.remove_node(max_degree_vertex);
-
         if sum_degrees >= size {
             working = false;
         }
     }
 
-    if g.edge_count() == 0 {
+    let mut edges_left = 0;
+    for (u, v, ()) in graph.all_edges() {
+        if !selected_vertexes.contains(&u) && !selected_vertexes.contains(&v) {
+            edges_left += 1;
+        }
+    }
+
+    if edges_left == 0 {
         selected_vertexes.len() as u64
     } else {
-        let estim = (g.edge_count() / graph.neighbors(get_vertex_with_max_degree(&graph).0).count()) as f64;
+        let estim = (edges_left / graph.neighbors(get_vertex_with_max_degree(&graph, Some(&selected_vertexes)).0).count()) as f64;
         selected_vertexes.len() as u64 + estim.floor() as u64
     }
 }

@@ -6,6 +6,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use petgraph::prelude::UnGraphMap;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Sequence, Value};
+
 use crate::ElapseTime;
 
 /// Check if a given vertex cover is a vertex cover of a given graph.
@@ -155,13 +156,16 @@ pub fn print_clq_file(graph: &UnGraphMap<u64, ()>) {
 /// graph.add_edge(0, 9, ());
 /// graph.add_edge(0, 8, ());
 ///
-/// assert_eq!(get_vertex_with_max_degree(&graph).0, 0);
-/// assert_eq!(get_vertex_with_max_degree(&graph).1, 3);
+/// assert_eq!(get_vertex_with_max_degree(&graph, None).0, 0);
+/// assert_eq!(get_vertex_with_max_degree(&graph, None).1, 3);
 /// ```
-pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>) -> (u64, usize) {
+pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>, marked_vertices: Option<&Vec<u64>>) -> (u64, usize) {
     let mut max_degree = 0;
     let mut max_degree_vertex = 0;
     for vertex in graph.nodes() {
+        if marked_vertices.is_some() && marked_vertices.unwrap().contains(&vertex) {
+            continue;
+        }
         let degree = graph.neighbors(vertex).count();
         if degree > max_degree {
             max_degree = degree;
@@ -513,8 +517,8 @@ mod graph_utils_tests {
         graph.add_edge(0, 9, ());
         graph.add_edge(0, 8, ());
         graph.add_edge(0, 7, ());
-        assert_eq!(get_vertex_with_max_degree(&graph).0, 0);
-        assert_eq!(get_vertex_with_max_degree(&graph).1, 4);
+        assert_eq!(get_vertex_with_max_degree(&graph, None).0, 0);
+        assert_eq!(get_vertex_with_max_degree(&graph, None).1, 4);
     }
 
     #[test]
@@ -527,8 +531,8 @@ mod graph_utils_tests {
         graph.add_edge(4, 5, ());
         graph.add_edge(5, 6, ());
 
-        assert_eq!(get_vertex_with_max_degree(&graph).0, 4);
-        assert_eq!(get_vertex_with_max_degree(&graph).1, 2);
+        assert_eq!(get_vertex_with_max_degree(&graph, None).0, 4);
+        assert_eq!(get_vertex_with_max_degree(&graph, None).1, 2);
     }
 
     #[test]

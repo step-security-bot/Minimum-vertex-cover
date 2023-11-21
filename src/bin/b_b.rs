@@ -19,7 +19,6 @@ fn main() {
             let res = vertex::run_algorithm(&args[1], &graph, &solve);
             println!("Result : {}", res);
             update_mvc_value(&res.graph_id, res.value, None);
-            add_time_to_yaml(&res.graph_id, res.value, res.time, "BnB", "ClqLB + DegLB");
             return;
         }
         if args.len() == 3 && args[2] != "-u"{
@@ -29,7 +28,7 @@ fn main() {
         // Run algorithm without updating value
         let res = vertex::run_algorithm(&args[1], &graph, &solve);
         println!("Result : {}", res);
-        add_time_to_yaml(&res.graph_id, res.value, res.time, "BnB", "ClqLB + DegLB");
+        add_time_to_yaml(&res.graph_id, res.value, res.time, "BnB", "Simple LB -> n_edges/max_degree");
     } else {
         println!("Usage: cargo run [-r] --bin b_b <graph_name> [(do_update_val) -u]");
     }

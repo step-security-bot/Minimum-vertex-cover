@@ -6,7 +6,7 @@ use std::time::Duration;
 use petgraph::prelude::UnGraphMap;
 use serde::{Deserialize, Serialize};
 
-use crate::graph_utils::{add_time_to_yaml, get_optimal_value, is_optimal_value, is_vertex_cover};
+use crate::graph_utils::{get_optimal_value, is_optimal_value, is_vertex_cover};
 
 pub mod graph_utils;
 pub mod format;

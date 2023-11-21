@@ -1,4 +1,4 @@
-test.clq: null
+test.clq: []
 myciel3.clq: []
 myciel4.clq:
 - date: 2023-11-19 17:09:31
@@ -11,6 +11,36 @@ myciel4.clq:
   time: 0min 0s 1ms 605µs
   algorithm: BnB
   comment: DegLB
+- date: 2023-11-20 18:00:48
+  mvc_val: 12
+  time: 0min 0s 1ms 991µs
+  algorithm: BnB
+  comment: ClqLB + DegLB
+- date: 2023-11-20 18:19:34
+  mvc_val: 12
+  time: 0min 0s 1ms 284µs
+  algorithm: BnB
+  comment: ClqLB + DegLB -> Only one graph copy
+- date: 2023-11-21 10:20:07
+  mvc_val: 12
+  time: 0min 0s 0ms 345µs
+  algorithm: BnB
+  comment: 'DegLb : without copy'
+- date: 2023-11-21 10:21:11
+  mvc_val: 12
+  time: 0min 0s 0ms 327µs
+  algorithm: BnB
+  comment: 'DegLb : without copy'
+- date: 2023-11-21 15:09:07
+  mvc_val: 12
+  time: 0min 0s 0ms 122µs
+  algorithm: BnB
+  comment: 'DegLb : without copy and BnB with only one graph copy'
+- date: 2023-11-21 15:13:24
+  mvc_val: 12
+  time: 0min 0s 0ms 817µs
+  algorithm: BnB
+  comment: DegLb + ClqLB & BnB with only one graph copy
 petersen.clq: []
 queen5_5.clq: []
 test2.clq: []
@@ -27,12 +57,72 @@ brock400_2.clq:
   time: 0min 8s 816ms 764µs
   algorithm: BnB
   comment: DegLB
+- date: 2023-11-20 18:00:19
+  mvc_val: 392
+  time: 0min 13s 0ms 314µs
+  algorithm: BnB
+  comment: ClqLB + DegLB
+- date: 2023-11-20 18:19:50
+  mvc_val: 392
+  time: 0min 12s 884ms 92µs
+  algorithm: BnB
+  comment: ClqLB + DegLB -> Only one graph copy
+- date: 2023-11-21 09:56:15
+  mvc_val: 392
+  time: 0min 5s 655ms 495µs
+  algorithm: BnB
+  comment: Simple LB -> n_edges/max_degree
+- date: 2023-11-21 10:20:20
+  mvc_val: 392
+  time: 0min 5s 976ms 206µs
+  algorithm: BnB
+  comment: 'DegLb : without copy and without last edge estimation in DegLB'
+- date: 2023-11-21 14:43:56
+  mvc_val: 392
+  time: 0min 6s 642ms 410µs
+  algorithm: BnB
+  comment: 'DegLb : without copy'
+- date: 2023-11-21 14:50:21
+  mvc_val: 392
+  time: 0min 4s 932ms 852µs
+  algorithm: BnB
+  comment: 'DegLb : without copy and BnB with only one graph copy'
+- date: 2023-11-21 15:13:39
+  mvc_val: 392
+  time: 0min 8s 463ms 717µs
+  algorithm: BnB
+  comment: DegLb + ClqLB & BnB with only one graph copy
+- date: 2023-11-21 15:33:03
+  mvc_val: 394
+  time: 0min 24s 591ms 142µs
+  algorithm: BnB
+  comment: DegLB without any copy. (weird stuff)
 brock400_4.clq: []
 brock800_2.clq: []
 brock800_4.clq: []
 C125.9.clq: []
-C250.9.clq: []
-C500.9.clq: []
+C250.9.clq:
+- date: 2023-11-21 15:10:45
+  mvc_val: 245
+  time: 0min 0s 721ms 42µs
+  algorithm: BnB
+  comment: 'DegLb : without copy and BnB with only one graph copy'
+- date: 2023-11-21 15:12:57
+  mvc_val: 245
+  time: 0min 0s 970ms 321µs
+  algorithm: BnB
+  comment: DegLb + ClqLB & BnB with only one graph copy
+C500.9.clq:
+- date: 2023-11-21 15:11:35
+  mvc_val: 495
+  time: 0min 7s 739ms 290µs
+  algorithm: BnB
+  comment: 'DegLb : without copy and BnB with only one graph copy'
+- date: 2023-11-21 15:12:37
+  mvc_val: 495
+  time: 0min 9s 983ms 505µs
+  algorithm: BnB
+  comment: DegLb + ClqLB & BnB with only one graph copy
 C1000.9.clq: []
 C2000.5.clq: []
 C2000.9.clq: []
@@ -47,7 +137,17 @@ hamming10-4.clq: []
 keller4.clq: []
 keller5.clq: []
 keller6.clq: []
-MANN_a27.clq: []
+MANN_a27.clq:
+- date: 2023-11-21 15:41:01
+  mvc_val: 375
+  time: 0min 2s 942ms 698µs
+  algorithm: BnB
+  comment: DegLB with only one graph copy
+- date: 2023-11-21 15:41:51
+  mvc_val: 375
+  time: 0min 3s 873ms 695µs
+  algorithm: BnB
+  comment: DegLB + ClqLB with only one graph copy
 MANN_a45.clq: []
 MANN_a81.clq: []
 p_hat300-1.clq: []
