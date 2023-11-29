@@ -1,5 +1,10 @@
 test.clq: []
-myciel3.clq: []
+myciel3.clq:
+- date: 2023-11-23 19:51:44
+  mvc_val: 6
+  time: 0min 0s 0ms 246µs
+  algorithm: BnB
+  comment: DegLB + ClqLB & BnB with only one graph copy
 myciel4.clq:
 - date: 2023-11-19 17:09:31
   mvc_val: 12
@@ -41,10 +46,35 @@ myciel4.clq:
   time: 0min 0s 0ms 817µs
   algorithm: BnB
   comment: DegLb + ClqLB & BnB with only one graph copy
-petersen.clq: []
-queen5_5.clq: []
-test2.clq: []
-brock200_2.clq: []
+petersen.clq:
+- date: 2023-11-23 19:51:59
+  mvc_val: 6
+  time: 0min 0s 0ms 396µs
+  algorithm: BnB
+  comment: DegLB + ClqLB & BnB with only one graph copy
+queen5_5.clq:
+- date: 2023-11-23 19:52:16
+  mvc_val: 20
+  time: 0min 0s 6ms 138µs
+  algorithm: BnB
+  comment: DegLB + ClqLB & BnB with only one graph copy
+test2.clq:
+- date: 2023-11-23 19:52:34
+  mvc_val: 5
+  time: 0min 0s 0ms 198µs
+  algorithm: BnB
+  comment: DegLB + ClqLB & BnB with only one graph copy
+brock200_2.clq:
+- date: 2023-11-23 19:52:58
+  mvc_val: 190
+  time: 0min 1s 137ms 473µs
+  algorithm: BnB
+  comment: DegLB + ClqLB & BnB with only one graph copy
+- date: 2023-11-23 19:58:09
+  mvc_val: 0
+  time: 0min 0s 0ms 159µs
+  algorithm: BnB
+  comment: ''
 brock200_4.clq: []
 brock400_2.clq:
 - date: 2023-11-19 17:09:52

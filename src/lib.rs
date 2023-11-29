@@ -48,16 +48,18 @@ impl Display for ElapseTime {
 pub struct Result {
     pub graph_id: String,
     pub value: u64,
+    pub mvc: Vec<u64>,
     pub is_optimal: Option<bool>,
     pub time: ElapseTime,
 }
 
 impl Result {
-    pub fn new(graph_id: String, value: u64, time: ElapseTime) -> Result {
+    pub fn new(graph_id: String, value: u64, mvc: Vec<u64> ,time: ElapseTime) -> Result {
         let is_optimal = is_optimal_value(&graph_id, value, None);
         Result {
             graph_id,
             value,
+            mvc,
             is_optimal,
             time,
         }
@@ -109,21 +111,23 @@ impl Display for Result {
 /// graph.add_edge(2, 3, ());
 ///
 /// let expected_vertex_cover = 2; //[0, 2] or [1, 2]
-/// assert_eq!(naive_search(&graph), expected_vertex_cover);
+/// assert_eq!(naive_search(&graph).0, expected_vertex_cover);
 /// ```
-pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> u64 {
+pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> (u64, Vec<u64>) {
     let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
     let mut found = false;
     let mut res = 0;
+    let mut res_subset: Vec<u64> = Vec::new();
     for subset in get_subsets(&possible_values) {
         if !found || res > subset.len() as u64 {
             if is_vertex_cover(graph, &subset) {
                 res = subset.len() as u64;
+                res_subset = subset;
                 found = true;
             }
         }
     }
-    res
+    (res, res_subset)
 }
 
 /// Run a given algorithm on a given graph and print the result. It is the default function when you want
@@ -142,15 +146,18 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> u64 {
 /// ```
 pub fn run_algorithm(graph_id: &str,
                      graph: &UnGraphMap<u64, ()>,
-                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> u64) -> Result {
+                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> (u64, Vec<u64>)) -> Result {
     use std::time::Instant;
     let now = Instant::now();
 
     let res = f(graph);
 
     let elapsed = ElapseTime::new(now.elapsed());
+
+    assert!(is_vertex_cover(graph, &res.1));
+    assert_eq!(res.0, res.1.len() as u64);
     
-    let res = Result::new(graph_id.to_string(),res, elapsed);
+    let res = Result::new(graph_id.to_string(),res.0,res.1 ,elapsed);
     return res;
 }
 
@@ -210,7 +217,7 @@ mod algorithms_tests {
         graph.add_edge(2, 3, ());
 
         let expected_vertex_cover = 2;
-        assert_eq!(naive_search(&graph), expected_vertex_cover);
+        assert_eq!(naive_search(&graph).0, expected_vertex_cover);
     }
 
     #[test]

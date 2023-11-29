@@ -1,22 +1,25 @@
-use std::cmp::{max, min};
+use std::cmp::max;
 use std::collections::HashMap;
 
 use petgraph::prelude::UnGraphMap;
 
 use crate::graph_utils::{copy_graph, get_vertex_with_max_degree};
 
-pub fn solve(graph: &UnGraphMap<u64, ()>) -> u64 {
+pub fn solve(graph: &UnGraphMap<u64, ()>) -> (u64, Vec<u64>) {
 
     let mut copy = copy_graph(graph);
     // Initialize the upper bound to the number of nodes in the graph
     // and the vertex cover found so far is empty
-    b_and_b(graph, &mut copy, graph.node_count() as u64, vec![])
+    let upper_bound_vc = &copy.nodes().collect();
+    let u = b_and_b(graph, &mut copy, graph.node_count() as u64,upper_bound_vc ,vec![]);
+    u
 }
 
-fn b_and_b(graph: &UnGraphMap<u64, ()>,
-           subgraph: &UnGraphMap<u64, ()>,
-           upper_bound: u64,
-           vertex_cover: Vec<u64>) -> u64 {
+fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
+               subgraph: &UnGraphMap<u64, ()>,
+               upper_bound: u64,
+               upper_bound_vc: &Vec<u64>,
+               vertex_cover: Vec<u64>) -> (u64, Vec<u64>) {
 
     // If the vertex cover found so far + the minimum vertex that needs to be added are greater than the UB
     // if vertex_cover.len() as u64 + max(deg_lb(graph), sat_lb(graph)) >= upper_bound {
@@ -24,22 +27,22 @@ fn b_and_b(graph: &UnGraphMap<u64, ()>,
     // }
     // If the graph is empty. (All edges have been covered)
     if subgraph.edge_count() == 0 {
-        return vertex_cover.len() as u64;
+        return (vertex_cover.len() as u64, vertex_cover);
     }
 
-    // let (v, max_deg) = get_vertex_with_max_degree(graph, None);
-    // let lb =   (graph.edge_count() / max_deg) as f64;
-    // let lb = lb.ceil() as u64;
+    let (v, max_deg) = get_vertex_with_max_degree(subgraph, None);
+    let lb_1 =   (subgraph.edge_count() / max_deg) as f64;
+    let lb_1 = lb_1.ceil() as u64;
 
     let deg_lb = deg_lb(subgraph);
     let clq_lb = clq_lb(subgraph);
     let lb = max(deg_lb, clq_lb);
 
-    if vertex_cover.len() as u64 + lb >= upper_bound {
-        return upper_bound;
+    if vertex_cover.len() as u64 + lb_1 >= upper_bound {
+        return (upper_bound, upper_bound_vc.clone());
     }
 
-    let v = get_vertex_with_max_degree(subgraph, None).0;
+    // let v = get_vertex_with_max_degree(subgraph, None).0;
 
     let mut subgraph = copy_graph(subgraph);
 
@@ -54,6 +57,7 @@ fn b_and_b(graph: &UnGraphMap<u64, ()>,
     let res_case1 = b_and_b(graph,
                             &subgraph,
                             upper_bound,
+                            upper_bound_vc,
                             vertex_cover_case1);
 
     // ====> Second case <====
@@ -66,12 +70,30 @@ fn b_and_b(graph: &UnGraphMap<u64, ()>,
         vertex_cover_case2.push(neighbor);
         subgraph.remove_node(neighbor);
     }
-    let res_case2 = b_and_b(graph,
-                            &subgraph,
-                            min(upper_bound, res_case1),
-                            vertex_cover_case2);
 
-    return min(res_case1, res_case2);
+    let res_case2 = {
+        if upper_bound >= res_case1.0 {
+            b_and_b(graph,
+            &subgraph,
+            res_case1.0,
+            &res_case1.1,
+            vertex_cover_case2)
+        } else {
+            b_and_b(graph,
+            &subgraph,
+            upper_bound,
+            upper_bound_vc,
+            vertex_cover_case2)
+        }
+    };
+
+    return {
+        if res_case1.0 >= res_case2.0 {
+            res_case2
+        } else {
+            res_case1
+        }
+    };
 }
 
 fn deg_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
@@ -273,14 +295,14 @@ mod branch_and_bound_tests {
         graph.add_edge(2, 0, ());
         graph.add_edge(2, 3, ());
 
-        assert_eq!(solve(&graph), 2);
+        assert_eq!(solve(&graph).0, 2);
     }
 
     #[test]
     fn test_with_queen_5() {
         let graph = load_clq_file("src/resources/graphs/queen5_5.clq").unwrap();
         let res = solve(&graph);
-        assert_eq!(res, 20);
+        assert_eq!(res.0, 20);
     }
 
 }
