@@ -2,7 +2,7 @@ use std::env;
 
 use vertex;
 use vertex::branch_and_bound::solve;
-use vertex::graph_utils::{load_clq_file, update_mvc_value};
+use vertex::graph_utils::load_clq_file;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

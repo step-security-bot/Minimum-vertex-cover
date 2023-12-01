@@ -148,14 +148,13 @@ pub fn run_algorithm(graph_id: &str,
                      graph: &UnGraphMap<u64, ()>,
                      f: &dyn Fn(&UnGraphMap<u64, ()>) -> (u64, Vec<u64>),
                      cmpl: bool) -> Result {
-
-    let mut g: UnGraphMap<u64, ()>;
+    let g: UnGraphMap<u64, ()>;
     if cmpl {
         g = graph_utils::complement(graph);
     } else {
         g = copy_graph(graph);
     }
-    
+
     use std::time::Instant;
     let now = Instant::now();
 
