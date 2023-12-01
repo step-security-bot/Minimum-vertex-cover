@@ -5,9 +5,9 @@ use vertex::branch_and_bound::solve;
 use vertex::run_algorithm;
 
 fn main() {
-
+    // Used to test the algorithm on a .graph file coming from a github repository
     let g = read_file();
-    let res = run_algorithm("karate.graph", &g, &solve);
+    let res = run_algorithm("karate.graph", &g, &solve, false);
     println!("Result : {}", res);
 }
 
@@ -18,9 +18,9 @@ pub fn read_file() -> UnGraphMap<u64, ()> {
 
     let mut g = UnGraphMap::<u64, ()>::new();
 
-    let mut i =0;
+    let mut i = 0;
     for line in reader.lines() {
-        i+=1;
+        i += 1;
         let line = line.expect("");
         let values: Vec<&str> = line.split_whitespace().collect();
         if i == 1 {
@@ -31,7 +31,7 @@ pub fn read_file() -> UnGraphMap<u64, ()> {
         } else {
             for value in values {
                 let j = value.parse::<u64>().expect("");
-                g.add_edge(i-2, j-1, ());
+                g.add_edge(i - 2, j - 1, ());
             }
         }
     }

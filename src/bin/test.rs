@@ -1,52 +1,34 @@
-use std::fs::File;
-use std::io::Read;
-use std::time::Duration;
+use petgraph::prelude::UnGraphMap;
 
-use serde_yaml::{Sequence, Value};
-
-use vertex::ElapseTime;
-use vertex::graph_utils::{add_time_to_yaml, GraphInfo};
+use vertex::graph_utils::{complement, is_vertex_cover, load_clq_file};
 
 fn main() {
-    let time = ElapseTime {
-        duration: Duration::new(0, 0),
-        min: 0,
-        sec: 0,
-        ms: 0,
-        micro: 0,
-    };
-    add_time_to_yaml("test.clq", 3, time, "BnB", "Yes i'm a comment");
+    // We are going to create a recursive function to iterate over all possible subset of vertices in a graph.
+    // For all subset, we are going to test if it is a vertex cover. If it is, we are printing it.
+
+    let graph = load_clq_file("src/resources/graphs/C125.9.clq").unwrap();
+
+    let graph = complement(&graph);
+
+    naive(&graph, &mut Vec::new(), 6);
 }
 
-#[allow(dead_code)]
-fn create_yaml() {
-    let data_path = "src/resources/graph_data.yml";
-    let time_path = "src/resources/time_result.yml";
 
-    let graph_file = File::open(data_path).expect("Could not open graph file");
-
-    let data: Vec<GraphInfo> = serde_yaml::from_reader(graph_file).expect("Could not parse graph file");
-
-    // Créer un mapping tel que key = grap_id et value = Vec<YamlTime>
-    let mut file = File::open(time_path).expect("Could not open time file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Could not read time file");
-
-    let time: Value = serde_yaml::from_str(&contents).expect("Could not parse time file");
-    let map = time.as_mapping().expect("Could not parse time file");
-
-    let mut map = map.clone();
-
-
-    for info in data.iter() {
-        // Pour chaque graph
-
-        // Créer une entrée id - Vec<YamlTime>
-        let vec: Sequence = Vec::new();
-
-        map.insert(Value::String(info.id.clone()), Value::Sequence(vec));
+fn naive(graph: &UnGraphMap<u64, ()>, features: &mut Vec<u64>, max_length: u64) -> () {
+    if features.len() > max_length as usize {
+        return;
+    }
+    if features.len() == max_length as usize {
+        if is_vertex_cover(&graph, &features) {
+            println!("{:?}", features);
+        };
     }
 
-    let mut file = File::create(time_path).expect("Could not open time file");
-    serde_yaml::to_writer(&mut file, &map).expect("Could not write time file");
+    for node in graph.nodes() {
+        if !features.contains(&node) {
+            features.push(node);
+            naive(graph, features, max_length);
+            features.pop();
+        }
+    }
 }

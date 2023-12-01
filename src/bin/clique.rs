@@ -1,8 +1,8 @@
 use std::env;
 
 use vertex;
+use vertex::branch_and_bound::solve_clq;
 use vertex::graph_utils::load_clq_file;
-use vertex::naive_search;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -14,11 +14,8 @@ fn main() {
                 return;
             }
         };
-        // Run algorithm without updating value
-        println!("/!\\ This algorithm compute the MVC value on the complement graph by default /!\\");
-        let res = vertex::run_algorithm(&args[1], &graph, &naive_search, true);
-        println!("Result : {}", res);
-    } else {
-        println!("Usage: cargo run [-r] --bin naive_search <graph_name>");
+
+        let res = solve_clq(&graph);
+        println!("Result : {}", res.0);
     }
 }

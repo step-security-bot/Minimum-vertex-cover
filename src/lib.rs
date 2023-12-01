@@ -6,7 +6,7 @@ use std::time::Duration;
 use petgraph::prelude::UnGraphMap;
 use serde::{Deserialize, Serialize};
 
-use crate::graph_utils::{get_optimal_value, is_optimal_value, is_vertex_cover};
+use crate::graph_utils::{copy_graph, get_optimal_value, is_optimal_value, is_vertex_cover};
 
 pub mod graph_utils;
 pub mod format;
@@ -48,18 +48,18 @@ impl Display for ElapseTime {
 pub struct Result {
     pub graph_id: String,
     pub value: u64,
-    pub mvc: Vec<u64>,
+    pub set: Vec<u64>,
     pub is_optimal: Option<bool>,
     pub time: ElapseTime,
 }
 
 impl Result {
-    pub fn new(graph_id: String, value: u64, mvc: Vec<u64> ,time: ElapseTime) -> Result {
+    pub fn new(graph_id: String, value: u64, mvc: Vec<u64>, time: ElapseTime) -> Result {
         let is_optimal = is_optimal_value(&graph_id, value, None);
         Result {
             graph_id,
             value,
-            mvc,
+            set: mvc,
             is_optimal,
             time,
         }
@@ -141,23 +141,32 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> (u64, Vec<u64>) {
 /// use vertex::{naive_search, run_algorithm};
 ///
 /// let mut graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
-/// let res = run_algorithm("test.clq", &graph, &naive_search);
+/// let res = run_algorithm("test.clq", &graph, &naive_search, false);
 /// println!("{}", res);
 /// ```
 pub fn run_algorithm(graph_id: &str,
                      graph: &UnGraphMap<u64, ()>,
-                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> (u64, Vec<u64>)) -> Result {
+                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> (u64, Vec<u64>),
+                     cmpl: bool) -> Result {
+
+    let mut g: UnGraphMap<u64, ()>;
+    if cmpl {
+        g = graph_utils::complement(graph);
+    } else {
+        g = copy_graph(graph);
+    }
+    
     use std::time::Instant;
     let now = Instant::now();
 
-    let res = f(graph);
+    let res = f(&g);
 
     let elapsed = ElapseTime::new(now.elapsed());
 
-    assert!(is_vertex_cover(graph, &res.1));
+    assert!(is_vertex_cover(&g, &res.1));
     assert_eq!(res.0, res.1.len() as u64);
-    
-    let res = Result::new(graph_id.to_string(),res.0,res.1 ,elapsed);
+
+    let res = Result::new(graph_id.to_string(), res.0, res.1, elapsed);
     return res;
 }
 
@@ -198,7 +207,6 @@ fn get_subsets<T>(s: &[T]) -> SubsetIterator<T> where T: Clone {
         n_times: 1 << n,
         i: 1,
     }
-
 }
 
 #[cfg(test)]

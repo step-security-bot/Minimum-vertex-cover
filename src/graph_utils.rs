@@ -44,6 +44,44 @@ pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &Vec<u64>) -> 
     true
 }
 
+pub fn is_clique(graph: &UnGraphMap<u64, ()>, clique: &Vec<u64>) -> bool {
+    for i in clique {
+        for j in clique {
+            if i != j && !graph.contains_edge(*i, *j) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+pub fn is_independent_set(graph: &UnGraphMap<u64, ()>, independent_set: &Vec<u64>) -> bool {
+    for i in independent_set {
+        for j in independent_set {
+            if i != j && graph.contains_edge(*i, *j) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
+    let mut complement = UnGraphMap::<u64, ()>::new();
+    for node in graph.nodes() {
+        complement.add_node(node);
+    }
+
+    for a in graph.nodes() {
+        for b in graph.nodes() {
+            if a != b && !graph.contains_edge(a, b) {
+                complement.add_edge(a, b, ());
+            }
+        }
+    }
+    complement
+}
+
 /// Load a graph from a DIMACS .col file.
 ///
 /// The format of the file is the following:
@@ -213,7 +251,7 @@ pub struct GraphInfo {
     format: String,
     order: usize,
     size: usize,
-    mvc_val: u64,
+    val: u64,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -247,7 +285,7 @@ pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, pa
         format: format.to_string(),
         order: graph.node_count(),
         size: graph.edge_count(),
-        mvc_val: 0,
+        val: 0,
     };
     data.push(info);
 
@@ -314,7 +352,7 @@ pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
     let mut found = false;
     for info in data.iter_mut() {
         if info.id == id {
-            info.mvc_val = mvc_val;
+            info.val = mvc_val;
             found = true;
             break;
         }
@@ -362,7 +400,7 @@ pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Option<bool> 
 
     for info in data.iter() {
         if info.id == id {
-            return if info.mvc_val == val {
+            return if info.val == val {
                 Some(true)
             } else {
                 Some(false)
@@ -402,7 +440,7 @@ pub fn get_optimal_value(id: &str, path: Option<&str>) -> Option<u64> {
 
     for info in data.iter() {
         if info.id == id {
-            return Some(info.mvc_val);
+            return Some(info.val);
         }
     }
     return None;

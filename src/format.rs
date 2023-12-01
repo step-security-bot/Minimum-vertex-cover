@@ -24,7 +24,7 @@ pub fn graph_nauty_to_petgraph(graph: &GraphNauty) -> UnGraphMap<u64, ()> {
     }
     for i in 0..graph.order() {
         for j in 0..graph.order() {
-            if graph.is_edge(i, j) && !petgraph.contains_edge(i, j){
+            if graph.is_edge(i, j) && !petgraph.contains_edge(i, j) {
                 petgraph.add_edge(i, j, ());
             }
         }

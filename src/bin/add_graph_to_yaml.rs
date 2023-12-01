@@ -27,7 +27,7 @@ pub fn update_graph_info() {
             add_graph_to_yaml(path_str.split("/").last().unwrap(),
                               "clq",
                               &graph,
-                              "src/resources/graphs_info.yaml");
+                              "src/resources/graph_data.yml");
         }
     }
 }
