@@ -89,6 +89,31 @@ impl Display for Result {
     }
 }
 
+
+pub struct Clock {
+    pub start: std::time::Instant,
+    pub limit: u64, // in seconds
+}
+
+impl Clock {
+    pub fn new(limit: u64) -> Clock {
+        Clock {
+            start: std::time::Instant::now(),
+            limit,
+        }
+    }
+
+    pub fn get_time(& self) -> ElapseTime {
+        let elapsed = self.start.elapsed();
+        ElapseTime::new(elapsed)
+    }
+    
+    pub fn is_time_up(&self) -> bool {
+        let elapsed = self.start.elapsed();
+        elapsed.as_secs() >= self.limit
+    }
+}
+
 /// Naïve algorithm that searches for the minimum vertex cover of a given graph.
 ///
 /// The algorithm list all possible subsets of the vertices of the graph and check if each
@@ -154,6 +179,10 @@ pub fn run_algorithm(graph_id: &str,
     } else {
         g = copy_graph(graph);
     }
+
+    println!("Running algorithm on a graph with order = {} and size = {}",
+             g.node_count(),
+             g.edge_count());
 
     use std::time::Instant;
     let now = Instant::now();

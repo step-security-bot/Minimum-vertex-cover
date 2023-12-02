@@ -14,11 +14,20 @@ fn main() {
                 return;
             }
         };
-        // Run algorithm without updating value
-        println!("/!\\ This algorithm compute the MVC value on the complement graph by default /!\\");
-        let res = vertex::run_algorithm(&args[1], &graph, &solve, true);
+        if args.len() == 3 && args[2] == "-c" {
+            println!("Running algorithm on the complement of the graph");
+            let res = vertex::run_algorithm(&args[1], &graph, &solve, true);
+            println!("Result : {}", res);
+            return;
+        }
+        if args.len() == 3 && args[2] != "-u"{
+            println!("Usage: cargo run [-r] --bin b_b <graph_name> [(on complement) -u]");
+            return;
+        }
+
+        println!("Running algorithm on the graph (not the complement)");
+        let res = vertex::run_algorithm(&args[1], &graph, &solve, false);
         println!("Result : {}", res);
-        // add_time_to_yaml(&res.graph_id, res.value, res.time, "BnB", "DegLB + ClqLB & BnB with only one graph copy");
     } else {
         println!("Usage: cargo run [-r] --bin b_b <graph_name>");
     }

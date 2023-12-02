@@ -521,11 +521,6 @@ mod graph_utils_tests {
     use super::*;
 
     #[test]
-    fn test_edges_iterate_over_all_edges() {
-        // TODO : Implémenter ceci avec l'exemple du test2.clq (c'est ça qui posait problème)
-    }
-
-    #[test]
     fn test_is_vertex_cover() {
         let mut graph = UnGraphMap::<u64, ()>::new();
         for i in 0..3 {
@@ -584,6 +579,13 @@ mod graph_utils_tests {
         }
 
         let mut copy = copy_graph(&graph);
+
+        assert_eq!(copy.node_count(), graph.node_count());
+        for i in 0..9 {
+            assert!(copy.contains_edge(i, i + 1));
+            assert!(graph.contains_edge(i, i + 1));
+        }
+
         graph.remove_edge(0, 1);
         assert_eq!(graph.edge_count(), 8);
         assert_eq!(copy.edge_count(), 9);
@@ -596,6 +598,24 @@ mod graph_utils_tests {
         copy.remove_node(1);
         assert_eq!(copy.node_count(), 8);
         assert_eq!(graph.node_count(), 9);
+    }
+
+    #[test]
+    fn test_complement() {
+        let mut g = UnGraphMap::<u64, ()>::new();
+        for i in 0..4 {
+            g.add_node(i);
+        }
+        g.add_edge(0, 1, ());
+        g.add_edge(0, 2, ());
+        g.add_edge(2, 3, ());
+
+        let compl = complement(&g);
+        assert_eq!(compl.edge_count(), 3);
+        assert_eq!(compl.node_count(), 4);
+        assert!(compl.contains_edge(1, 3));
+        assert!(compl.contains_edge(1, 2));
+        assert!(compl.contains_edge(0, 3));
     }
 
     #[test]

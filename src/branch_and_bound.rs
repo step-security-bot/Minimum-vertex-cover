@@ -20,18 +20,9 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
                upper_bound_vc: &Vec<u64>,
                vertex_cover: Vec<u64>) -> (u64, Vec<u64>) {
 
-    // If the vertex cover found so far + the minimum vertex that needs to be added are greater than the UB
-    // if vertex_cover.len() as u64 + max(deg_lb(graph), sat_lb(graph)) >= upper_bound {
-    //    return upper_bound;
-    // }
-    // If the graph is empty. (All edges have been covered)
     if subgraph.edge_count() == 0 {
         return (vertex_cover.len() as u64, vertex_cover);
     }
-
-    let (v, _max_deg) = get_vertex_with_max_degree(subgraph, None);
-    // let lb_1 =   (subgraph.edge_count() / max_deg) as f64;
-    // let lb_1 = lb_1.ceil() as u64;
 
     let deg_lb = deg_lb(subgraph);
     let clq_lb = clq_lb(subgraph);
@@ -41,9 +32,10 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
         return (upper_bound, upper_bound_vc.clone());
     }
 
-    // let v = get_vertex_with_max_degree(subgraph, None).0;
+    let (v, _max_deg) = get_vertex_with_max_degree(subgraph, None);
 
     let mut subgraph = copy_graph(subgraph);
+    let neighbors: Vec<u64> = subgraph.neighbors(v).collect();
 
     // ====> First case <====
     // - G \ {v}
@@ -65,7 +57,7 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
     let mut vertex_cover_case2 = vertex_cover.clone();
 
     // Remove all neighbors of v + edges from neighbors to their neighbors
-    for neighbor in graph.neighbors(v) {
+    for neighbor in neighbors {
         vertex_cover_case2.push(neighbor);
         subgraph.remove_node(neighbor);
     }
@@ -95,7 +87,7 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
     };
 }
 
-fn deg_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
+pub fn deg_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
     let size = graph.edge_count();
     let mut selected_vertexes = Vec::<u64>::new();
     let mut sum_degrees: usize = 0;
@@ -131,7 +123,7 @@ fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
     todo!("Implement lower bound based on satisfiability")
 }
 
-fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
+pub fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
     // 1) Get the complement of the graph
     // 2) Find a greedy coloring of the complement
     // 3) Each color is a independent set
@@ -223,24 +215,6 @@ mod branch_and_bound_tests {
     use crate::graph_utils::load_clq_file;
 
     use super::*;
-
-    #[test]
-    fn test_complement() {
-        let mut g = UnGraphMap::<u64, ()>::new();
-        for i in 0..4 {
-            g.add_node(i);
-        }
-        g.add_edge(0, 1, ());
-        g.add_edge(0, 2, ());
-        g.add_edge(2, 3, ());
-
-        let compl = complement(&g);
-        assert_eq!(compl.edge_count(), 3);
-        assert_eq!(compl.node_count(), 4);
-        assert!(compl.contains_edge(1, 3));
-        assert!(compl.contains_edge(1, 2));
-        assert!(compl.contains_edge(0, 3));
-    }
 
     #[test]
     fn test_greedy_coloring() {
