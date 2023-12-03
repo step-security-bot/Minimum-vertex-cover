@@ -19,7 +19,7 @@ fn main() {
             println!("Result : {}", res);
             return;
         }
-        if args.len() == 3 && args[2] != "-u"{
+        if args.len() == 3 && args[2] != "-u" {
             println!("Usage: cargo run [-r] --bin b_b <graph_name> [(on complement) -u]");
             return;
         }

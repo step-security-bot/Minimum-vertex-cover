@@ -334,6 +334,7 @@ pub struct YamlTime {
     date: String,
     mvc_val: u64,
     time: String,
+    is_time_limit: bool,
     algorithm: String,
     comment: String,
 }
@@ -396,7 +397,7 @@ fn add_graph_to_time_file(id: &str) {
 /// # Parameters
 /// - id : the id of the graph (ex: test.clq)
 /// - mvc_val : the new value of the minimum vertex cover
-/// - path : the path to the yaml file containing the graph info (optionnal-> None or Some(path))
+/// - path : the path to the yaml file containing the graph info (optional-> None or Some(path))
 ///
 /// # Panics
 /// Panics if :
@@ -450,7 +451,7 @@ pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
 /// # Parameters
 /// - id : the id of the graph (ex: test.clq)
 /// - val : the value to check
-/// - path : the path to the yaml file containing the graph info (optionnal-> None or Some(path))
+/// - path : the path to the yaml file containing the graph info (optional-> None or Some(path))
 ///
 /// # Panics
 /// Panics if :
@@ -492,7 +493,7 @@ pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Option<bool> 
 ///
 /// # Parameters
 /// - id : the id of the graph (ex: test.clq)
-/// - path : the path to the yaml file containing the graph info (optionnal-> None or Some(path))
+/// - path : the path to the yaml file containing the graph info (optional-> None or Some(path))
 ///
 /// # Panics
 /// Panics if the file cannot be opened
@@ -523,7 +524,7 @@ pub fn get_optimal_value(id: &str, path: Option<&str>) -> Option<u64> {
 }
 
 /// Adds a new time for the given graph to the yaml file located at src/resources/time_result.yml.
-pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, algorithm: &str, comment: &str) {
+pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, is_time_limit: bool, algorithm: &str, comment: &str) {
     let path = "src/resources/time_result.yml";
     let mut file = File::open(path)
         .expect(format!("Unable to open file {:?}", path).as_str());
@@ -548,6 +549,7 @@ pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, algorithm: &st
         date: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
         mvc_val,
         time: time.to_string(),
+        is_time_limit,
         algorithm: algorithm.to_string(),
         comment: comment.to_string(),
     };
@@ -718,12 +720,12 @@ mod graph_utils_tests {
         g.add_edge(0, 2, ());
         g.add_edge(2, 3, ());
 
-        let compl = complement(&g);
-        assert_eq!(compl.edge_count(), 3);
-        assert_eq!(compl.node_count(), 4);
-        assert!(compl.contains_edge(1, 3));
-        assert!(compl.contains_edge(1, 2));
-        assert!(compl.contains_edge(0, 3));
+        let complement = complement(&g);
+        assert_eq!(complement.edge_count(), 3);
+        assert_eq!(complement.node_count(), 4);
+        assert!(complement.contains_edge(1, 3));
+        assert!(complement.contains_edge(1, 2));
+        assert!(complement.contains_edge(0, 3));
     }
 
     #[test]

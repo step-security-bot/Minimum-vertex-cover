@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+
 use petgraph::prelude::UnGraphMap;
+
 use vertex::branch_and_bound::solve;
 use vertex::run_algorithm;
 

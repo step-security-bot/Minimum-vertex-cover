@@ -24,8 +24,6 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
                upper_bound: u64,
                upper_bound_vc: &Vec<u64>,
                vertex_cover: Vec<u64>) -> (u64, Vec<u64>) {
-
-
     if subgraph.edge_count() == 0 {
         return (vertex_cover.len() as u64, vertex_cover);
     }
