@@ -18,7 +18,6 @@ use crate::ElapseTime;
 /// ```rust
 /// use petgraph::matrix_graph::MatrixGraph;
 /// use petgraph::prelude::UnGraphMap;
-/// use petgraph::Undirected;
 /// use petgraph::stable_graph::NodeIndex;
 /// use vertex::graph_utils::is_vertex_cover;
 ///
@@ -44,6 +43,26 @@ pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &Vec<u64>) -> 
     true
 }
 
+/// Check if a given array of vertices is a clique in the given graph.
+///
+/// # Example
+/// ``` rust
+/// use petgraph::prelude::UnGraphMap;
+/// use vertex::graph_utils::is_clique;
+///
+/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// for i in 0..5 {
+///   graph.add_node(i);
+/// }
+/// graph.add_edge(0, 1, ());
+/// graph.add_edge(0, 2, ());
+/// graph.add_edge(1, 2, ());
+///
+/// assert!(is_clique(&graph, &vec![0, 1, 2]));
+///
+/// graph.remove_edge(0, 1);
+/// assert!(!is_clique(&graph, &vec![0, 1, 2]));
+/// ```
 pub fn is_clique(graph: &UnGraphMap<u64, ()>, clique: &Vec<u64>) -> bool {
     for i in clique {
         for j in clique {
@@ -55,6 +74,24 @@ pub fn is_clique(graph: &UnGraphMap<u64, ()>, clique: &Vec<u64>) -> bool {
     true
 }
 
+/// Check if a given array of vertices is an independent set in the given graph.
+///
+/// # Example
+/// ```rust
+/// use petgraph::prelude::UnGraphMap;
+/// use vertex::graph_utils::is_independent_set;
+///
+/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// for i in 0..5 {
+///  graph.add_node(i);
+/// }
+/// graph.add_edge(0, 1, ());
+/// graph.add_edge(0, 2, ());
+/// graph.add_edge(1, 2, ());
+///
+/// assert!(is_independent_set(&graph, &vec![3, 4]));
+/// assert!(!is_independent_set(&graph, &vec![0, 1, 2]));
+/// ```
 pub fn is_independent_set(graph: &UnGraphMap<u64, ()>, independent_set: &Vec<u64>) -> bool {
     for i in independent_set {
         for j in independent_set {
@@ -66,6 +103,25 @@ pub fn is_independent_set(graph: &UnGraphMap<u64, ()>, independent_set: &Vec<u64
     true
 }
 
+/// Returns the complement of a given graph.
+///
+/// # Example
+/// ```rust
+/// use petgraph::prelude::UnGraphMap;
+/// use vertex::graph_utils::complement;
+///
+/// let mut g = UnGraphMap::<u64, ()>::new();
+/// for i in 0..4 {
+///  g.add_node(i);
+/// }
+/// g.add_edge(0, 1, ());
+/// g.add_edge(1, 2, ());
+/// g.add_edge(2, 3, ());
+///
+/// let complement = complement(&g);
+/// assert_eq!(complement.node_count(), 4);
+/// assert_eq!(complement.edge_count(), 3);
+/// ```
 pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
     let mut complement = UnGraphMap::<u64, ()>::new();
     for node in graph.nodes() {
@@ -103,7 +159,6 @@ pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
 ///
 /// # Example
 /// ```rust
-/// use petgraph::stable_graph::NodeIndex;
 /// use vertex::graph_utils::load_clq_file;
 ///
 /// let graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
@@ -169,11 +224,30 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
     Ok(g)
 }
 
-pub fn print_clq_file(graph: &UnGraphMap<u64, ()>) {
-    println!("p edge {} {}", graph.node_count(), graph.edge_count());
+/// Returns the string of a given file in the DIMACS .clq format.
+///
+/// # Example
+/// ```rust
+/// use petgraph::prelude::UnGraphMap;
+/// use vertex::graph_utils::graph_to_string;
+///
+/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// for i in 0..4 {
+///     graph.add_node(i);
+/// }
+/// graph.add_edge(0, 1, ());
+/// graph.add_edge(1, 2, ());
+///
+/// let string = graph_to_string(&graph);
+/// assert_eq!(string, "p edge 4 2\ne 1 2\ne 2 3\n");
+/// ```
+pub fn graph_to_string(graph: &UnGraphMap<u64, ()>) -> String {
+    let mut string = String::new();
+    string.push_str(&format!("p edge {} {}\n", graph.node_count(), graph.edge_count()));
     for (i, j, _) in graph.all_edges() {
-        println!("e {} {}", i + 1, j + 1);
+        string.push_str(&format!("e {} {}\n", i + 1, j + 1));
     }
+    string
 }
 
 /// Returns the vertex with the maximum degree in the graph and its degree.
@@ -181,7 +255,6 @@ pub fn print_clq_file(graph: &UnGraphMap<u64, ()>) {
 /// # Example
 /// ```rust
 /// use petgraph::prelude::UnGraphMap;
-///
 /// use vertex::graph_utils::get_vertex_with_max_degree;
 ///
 /// let mut graph = UnGraphMap::<u64, ()>::new();
@@ -245,6 +318,7 @@ pub fn copy_graph(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
     copy
 }
 
+/// Structure used to store the information of a graph such as its exact value of the MVC.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct GraphInfo {
     pub id: String,
@@ -254,6 +328,7 @@ pub struct GraphInfo {
     val: u64,
 }
 
+/// Structure used to store the information of a computation of the MVC for a given graph.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct YamlTime {
     date: String,
@@ -340,6 +415,7 @@ fn add_graph_to_time_file(id: &str) {
 /// // The value of the minimum vertex cover for the test.clq graph is now 3
 /// ```
 pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
+    // TODO : this function has to be deleted later on
     let path = match path {
         Some(path) => path,
         None => "src/resources/graph_data.yml",
@@ -446,6 +522,7 @@ pub fn get_optimal_value(id: &str, path: Option<&str>) -> Option<u64> {
     return None;
 }
 
+/// Adds a new time for the given graph to the yaml file located at src/resources/time_result.yml.
 pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, algorithm: &str, comment: &str) {
     let path = "src/resources/time_result.yml";
     let mut file = File::open(path)
@@ -487,6 +564,7 @@ pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, algorithm: &st
     serde_yaml::to_writer(&mut file, &map).expect("Could not write time file");
 }
 
+/// Get all the times for a given graph id.
 pub fn get_time_data(id: &str) -> Vec<YamlTime> {
     let path = "src/resources/time_result.yml";
     let mut file = File::open(path)
@@ -536,6 +614,36 @@ mod graph_utils_tests {
         assert!(is_vertex_cover(&graph, &vertex_cover));
         vertex_cover.push(2);
         assert!(is_vertex_cover(&graph, &vertex_cover));
+    }
+
+    #[test]
+    fn test_is_clique() {
+        let mut graph = UnGraphMap::<u64, ()>::new();
+        for i in 0..5 {
+            graph.add_node(i);
+        }
+        graph.add_edge(0, 1, ());
+        graph.add_edge(0, 2, ());
+        graph.add_edge(1, 2, ());
+
+        assert!(is_clique(&graph, &vec![0, 1, 2]));
+
+        graph.remove_edge(0, 1);
+        assert!(!is_clique(&graph, &vec![0, 1, 2]));
+    }
+
+    #[test]
+    fn test_is_independent_set() {
+        let mut graph = UnGraphMap::<u64, ()>::new();
+        for i in 0..5 {
+            graph.add_node(i);
+        }
+        graph.add_edge(0, 1, ());
+        graph.add_edge(0, 2, ());
+        graph.add_edge(1, 2, ());
+
+        assert!(is_independent_set(&graph, &vec![3, 4]));
+        assert!(!is_independent_set(&graph, &vec![0, 1, 2]));
     }
 
     #[test]
@@ -628,5 +736,18 @@ mod graph_utils_tests {
         assert!(graph.contains_edge(2, 3));
         assert!(graph.contains_edge(4, 0));
         assert!(graph.contains_edge(4, 1));
+    }
+
+    #[test]
+    fn test_graph_to_string() {
+        let mut graph = UnGraphMap::<u64, ()>::new();
+        for i in 0..4 {
+            graph.add_node(i);
+        }
+        graph.add_edge(0, 1, ());
+        graph.add_edge(1, 2, ());
+
+        let string = graph_to_string(&graph);
+        assert_eq!(string, "p edge 4 2\ne 1 2\ne 2 3\n");
     }
 }

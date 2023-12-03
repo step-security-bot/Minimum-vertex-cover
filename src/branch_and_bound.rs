@@ -2,8 +2,8 @@ use std::cmp::max;
 use std::collections::HashMap;
 
 use petgraph::prelude::UnGraphMap;
-use crate::Clock;
 
+use crate::Clock;
 use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree};
 
 pub fn solve(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64>) {
@@ -21,7 +21,6 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
                upper_bound_vc: &Vec<u64>,
                vertex_cover: Vec<u64>,
                clock: &Clock) -> (u64, Vec<u64>) {
-
     if clock.is_time_up() {
         return (upper_bound, upper_bound_vc.clone());
     }
@@ -93,6 +92,7 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
     };
 }
 
+// TODO : make this private
 pub fn deg_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
     let size = graph.edge_count();
     let mut selected_vertexes = Vec::<u64>::new();
@@ -129,6 +129,8 @@ fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
     todo!("Implement lower bound based on satisfiability")
 }
 
+
+// TODO : make this private
 pub fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
     // 1) Get the complement of the graph
     // 2) Find a greedy coloring of the complement
@@ -194,6 +196,13 @@ fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
 }
 
 
+/// Solve the maximum clique problem by solving the minimum vertex cover problem.  
+/// Algorithm : 
+/// 1. Computes the complement of the graph
+/// 2. Solves the minimum vertex cover problem on the complement
+/// 3. The vertices that are not in the minimum vertex cover are in the maximum independent set
+/// 4. An independent set in the complement is a clique in the original graph.
+///
 pub fn solve_clq(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64>) {
 
     // We know that each clique correspond to an independent set in the complement of the graph

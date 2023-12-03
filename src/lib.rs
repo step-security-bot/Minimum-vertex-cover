@@ -192,14 +192,18 @@ pub fn run_algorithm(graph_id: &str,
     let g: UnGraphMap<u64, ()>;
     if cmpl {
         g = graph_utils::complement(graph);
-        println!("Running algorithm the complement of the graph. Order = {} and size = {}",
+        let density = (2 * g.edge_count()) as f64 / (g.node_count() * (g.node_count() - 1)) as f64;
+        println!("Running algorithm the complement of the graph. Order = {} and size = {}. Density = {}",
                  g.node_count(),
-                 g.edge_count());
+                 g.edge_count(),
+                 density);
     } else {
-        println!("Running algorithm on the graph. Order = {} and size = {}",
-                 graph.node_count(),
-                 graph.edge_count());
         g = copy_graph(graph);
+        let density = (2 * g.edge_count()) as f64 / (g.node_count() * (g.node_count() - 1)) as f64;
+        println!("Running algorithm on the graph. Order = {} and size = {}, density = {}",
+                 graph.node_count(),
+                 graph.edge_count(),
+                 density);
     }
 
     let limit = 3600;
