@@ -2,6 +2,7 @@ use std::env;
 
 use vertex;
 use vertex::branch_and_bound::solve_clq;
+use vertex::Clock;
 use vertex::graph_utils::load_clq_file;
 
 fn main() {
@@ -15,7 +16,7 @@ fn main() {
             }
         };
 
-        let res = solve_clq(&graph);
+        let res = solve_clq(&graph, &Clock::new(3600));
         println!("Result : {}", res.0);
     }
 }

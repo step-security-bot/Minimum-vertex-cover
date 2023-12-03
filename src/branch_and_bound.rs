@@ -2,15 +2,16 @@ use std::cmp::max;
 use std::collections::HashMap;
 
 use petgraph::prelude::UnGraphMap;
+use crate::Clock;
 
 use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree};
 
-pub fn solve(graph: &UnGraphMap<u64, ()>) -> (u64, Vec<u64>) {
-    let mut copy = copy_graph(graph);
+pub fn solve(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64>) {
     // Initialize the upper bound to the number of nodes in the graph
     // and the vertex cover found so far is empty
-    let upper_bound_vc = &copy.nodes().collect();
-    let u = b_and_b(graph, &mut copy, graph.node_count() as u64, upper_bound_vc, vec![]);
+    let upper_bound_vc = &graph.nodes().collect();
+    let u = b_and_b(graph, &graph, graph.node_count() as u64,
+                    upper_bound_vc, vec![], clock);
     u
 }
 
@@ -18,8 +19,12 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
                subgraph: &UnGraphMap<u64, ()>,
                upper_bound: u64,
                upper_bound_vc: &Vec<u64>,
-               vertex_cover: Vec<u64>) -> (u64, Vec<u64>) {
+               vertex_cover: Vec<u64>,
+               clock: &Clock) -> (u64, Vec<u64>) {
 
+    if clock.is_time_up() {
+        return (upper_bound, upper_bound_vc.clone());
+    }
     if subgraph.edge_count() == 0 {
         return (vertex_cover.len() as u64, vertex_cover);
     }
@@ -49,7 +54,7 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
                             &subgraph,
                             upper_bound,
                             upper_bound_vc,
-                            vertex_cover_case1);
+                            vertex_cover_case1, clock);
 
     // ====> Second case <====
     // - G \ N*(v)
@@ -68,13 +73,14 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
                     &subgraph,
                     res_case1.0,
                     &res_case1.1,
-                    vertex_cover_case2)
+                    vertex_cover_case2, clock)
         } else {
             b_and_b(graph,
                     &subgraph,
                     upper_bound,
                     upper_bound_vc,
-                    vertex_cover_case2)
+                    vertex_cover_case2,
+                    clock)
         }
     };
 
@@ -188,14 +194,16 @@ fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
 }
 
 
-pub fn solve_clq(graph: &UnGraphMap<u64, ()>) -> (u64, Vec<u64>) {
+pub fn solve_clq(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64>) {
 
     // We know that each clique correspond to an independent set in the complement of the graph
     let mut cmpl = complement(graph);
 
     // The complement of a maximum independent set is a minimum vertex cover
     let upper_bound_vc = &cmpl.nodes().collect();
-    let mvc_res = b_and_b(graph, &mut cmpl, graph.node_count() as u64, upper_bound_vc, vec![]);
+    let mvc_res = b_and_b(graph, &mut cmpl,
+                          graph.node_count() as u64, upper_bound_vc,
+                          vec![], clock);
 
 
     // The complement of a minimum vertex cover is a maximum independent set
@@ -273,13 +281,13 @@ mod branch_and_bound_tests {
         graph.add_edge(2, 0, ());
         graph.add_edge(2, 3, ());
 
-        assert_eq!(solve(&graph).0, 2);
+        assert_eq!(solve(&graph, &Clock::new(3600)).0, 2);
     }
 
     #[test]
     fn test_with_queen_5() {
         let graph = load_clq_file("src/resources/graphs/queen5_5.clq").unwrap();
-        let res = solve(&graph);
+        let res = solve(&graph, &Clock::new(3600));
         assert_eq!(res.0, 20);
     }
 
@@ -287,7 +295,7 @@ mod branch_and_bound_tests {
     fn test_is_value_optimal_c125() {
         let graph = load_clq_file("src/resources/graphs/C125.9.clq").unwrap();
 
-        let res = solve_clq(&graph);
+        let res = solve_clq(&graph, &Clock::new(3600));
 
         assert_eq!(res.0, 34); // This is the value of the DIMACS benchmark
         // https://iridia.ulb.ac.be/~fmascia/maximum_clique/DIMACS-benchmark
@@ -298,7 +306,7 @@ mod branch_and_bound_tests {
     fn test_is_value_optimal_c250() {
         let graph = load_clq_file("src/resources/graphs/C250.9.clq").unwrap();
 
-        let res = solve_clq(&graph);
+        let res = solve_clq(&graph, &Clock::new(3600));
 
         assert_eq!(res.0, 44); // This is the value of the DIMACS benchmark
         // https://iridia.ulb.ac.be/~fmascia/maximum_clique/DIMACS-benchmark

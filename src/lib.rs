@@ -51,10 +51,11 @@ pub struct Result {
     pub set: Vec<u64>,
     pub is_optimal: Option<bool>,
     pub time: ElapseTime,
+    pub is_time_limit: bool,
 }
 
 impl Result {
-    pub fn new(graph_id: String, value: u64, mvc: Vec<u64>, time: ElapseTime) -> Result {
+    pub fn new(graph_id: String, value: u64, mvc: Vec<u64>, time: ElapseTime, is_time_limit: bool) -> Result {
         let is_optimal = is_optimal_value(&graph_id, value, None);
         Result {
             graph_id,
@@ -62,6 +63,7 @@ impl Result {
             set: mvc,
             is_optimal,
             time,
+            is_time_limit,
         }
     }
 }
@@ -71,24 +73,32 @@ impl Display for Result {
         let opt_message = {
             if !self.is_optimal.is_none() {
                 if self.is_optimal.unwrap() {
-                    "The value is optimal (as long as the data is correct in the yaml file)".to_string()
+                    "\t The value is optimal (as long as the data is correct in the yaml file)".to_string()
                 } else {
                     let true_opt = get_optimal_value(&self.graph_id, None).unwrap_or(0);
-                    format!("The value is not optimal and the correct value is {}", true_opt).to_string()
+                    format!("\t The value is not optimal and the correct value is {}", true_opt).to_string()
                 }
             } else {
-                "The graph is not in the yaml file".to_string()
+                "\t The graph is not in the yaml file".to_string()
             }
         };
 
-        write!(f, "Minimum vertex cover for the {:?} graph = {}\n{}\nTime taken by the algorithm : {}",
+        let time_limit_message = {
+            if self.is_time_limit {
+                "\n\t The algorithm was stopped because it reached the time limit".to_string()
+            } else {
+                "".to_string()
+            }
+        };
+
+        write!(f, "Minimum vertex cover for the {:?} graph = {}\n{}\n\t Time taken by the algorithm : {} {}",
                self.graph_id,
                self.value,
                opt_message,
-               self.time)
+               self.time,
+               time_limit_message)
     }
 }
-
 
 pub struct Clock {
     pub start: std::time::Instant,
@@ -103,11 +113,11 @@ impl Clock {
         }
     }
 
-    pub fn get_time(& self) -> ElapseTime {
+    pub fn get_time(&self) -> ElapseTime {
         let elapsed = self.start.elapsed();
         ElapseTime::new(elapsed)
     }
-    
+
     pub fn is_time_up(&self) -> bool {
         let elapsed = self.start.elapsed();
         elapsed.as_secs() >= self.limit
@@ -119,12 +129,12 @@ impl Clock {
 /// The algorithm list all possible subsets of the vertices of the graph and check if each
 /// subset is a vertex cover going from the smallest subset to the largest one.
 ///
-/// This algorithm can be used on any graph but the subset size is capped at around 100 vertexes.
+/// This algorithm can be used on any graph with order < 65.
 ///
 /// # Example
 /// ```rust
 /// use petgraph::prelude::UnGraphMap;
-/// use vertex::naive_search;
+/// use vertex::{Clock, naive_search};
 ///
 /// let mut graph = UnGraphMap::<u64, ()>::new();
 /// for i in 0..4 {
@@ -136,14 +146,20 @@ impl Clock {
 /// graph.add_edge(2, 3, ());
 ///
 /// let expected_vertex_cover = 2; //[0, 2] or [1, 2]
-/// assert_eq!(naive_search(&graph).0, expected_vertex_cover);
+/// assert_eq!(naive_search(&graph, &Clock::new(3600)).0, expected_vertex_cover);
 /// ```
-pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> (u64, Vec<u64>) {
+pub fn naive_search(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64>) {
+    if graph.node_count() > 64 {
+        panic!("This algorithm can only be used on graph with less than 65 vertices")
+    }
     let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
     let mut found = false;
     let mut res = 0;
     let mut res_subset: Vec<u64> = Vec::new();
     for subset in get_subsets(&possible_values) {
+        if clock.is_time_up() {
+            break;
+        }
         if !found || res > subset.len() as u64 {
             if is_vertex_cover(graph, &subset) {
                 res = subset.len() as u64;
@@ -171,30 +187,33 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>) -> (u64, Vec<u64>) {
 /// ```
 pub fn run_algorithm(graph_id: &str,
                      graph: &UnGraphMap<u64, ()>,
-                     f: &dyn Fn(&UnGraphMap<u64, ()>) -> (u64, Vec<u64>),
+                     f: &dyn Fn(&UnGraphMap<u64, ()>, &Clock) -> (u64, Vec<u64>),
                      cmpl: bool) -> Result {
     let g: UnGraphMap<u64, ()>;
     if cmpl {
         g = graph_utils::complement(graph);
+        println!("Running algorithm the complement of the graph. Order = {} and size = {}",
+                 g.node_count(),
+                 g.edge_count());
     } else {
+        println!("Running algorithm on the graph. Order = {} and size = {}",
+                 graph.node_count(),
+                 graph.edge_count());
         g = copy_graph(graph);
     }
 
-    println!("Running algorithm on a graph with order = {} and size = {}",
-             g.node_count(),
-             g.edge_count());
+    let limit = 3600;
 
-    use std::time::Instant;
-    let now = Instant::now();
+    let clock: Clock = Clock::new(limit);
 
-    let res = f(&g);
+    let res = f(&g, &clock);
 
-    let elapsed = ElapseTime::new(now.elapsed());
+    let elapsed = clock.get_time();
 
     assert!(is_vertex_cover(&g, &res.1));
     assert_eq!(res.0, res.1.len() as u64);
 
-    let res = Result::new(graph_id.to_string(), res.0, res.1, elapsed);
+    let res = Result::new(graph_id.to_string(), res.0, res.1, elapsed, clock.is_time_up());
     return res;
 }
 
@@ -253,7 +272,7 @@ mod algorithms_tests {
         graph.add_edge(2, 3, ());
 
         let expected_vertex_cover = 2;
-        assert_eq!(naive_search(&graph).0, expected_vertex_cover);
+        assert_eq!(naive_search(&graph, &Clock::new(3600)).0, expected_vertex_cover);
     }
 
     #[test]

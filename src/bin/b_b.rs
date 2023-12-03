@@ -15,7 +15,6 @@ fn main() {
             }
         };
         if args.len() == 3 && args[2] == "-c" {
-            println!("Running algorithm on the complement of the graph");
             let res = vertex::run_algorithm(&args[1], &graph, &solve, true);
             println!("Result : {}", res);
             return;
@@ -25,7 +24,6 @@ fn main() {
             return;
         }
 
-        println!("Running algorithm on the graph (not the complement)");
         let res = vertex::run_algorithm(&args[1], &graph, &solve, false);
         println!("Result : {}", res);
     } else {

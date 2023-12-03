@@ -2,28 +2,14 @@ use std::cmp::max;
 
 use petgraph::prelude::UnGraphMap;
 
-use vertex::{Clock, ElapseTime};
 use vertex::branch_and_bound::{clq_lb, deg_lb};
-use vertex::graph_utils::{copy_graph, get_vertex_with_max_degree, is_vertex_cover, load_clq_file};
-use vertex::run_algorithm;
+use vertex::graph_utils::{copy_graph, get_vertex_with_max_degree, is_vertex_cover};
 
 fn main() {
-    // We are going to create a recursive function to iterate over all possible subset of vertices in a graph.
-    // For all subset, we are going to test if it is a vertex cover. If it is, we are printing it.
-
-    let graph = load_clq_file("src/resources/graphs/brock200_4.clq").unwrap();
-
-    // let graph = complement(&graph);
-
-    // naive(&graph, &mut Vec::new(), 6);
-
-
-    let res = run_algorithm("brock200_4.clq", &graph, &solve_b, true);
-
-    println!("{}", res);
+    println!("Hello, world!");
 }
 
-pub fn solve_b(graph: &UnGraphMap<u64, ()>, clock: Clock) -> (u64, Vec<u64, ElapseTime>) {
+pub fn solve_b(graph: &UnGraphMap<u64, ()>) -> (u64, Vec<u64>) {
     let mut copy = copy_graph(graph);
     // Initialize the upper bound to the number of nodes in the graph
     // and the vertex cover found so far is empty
