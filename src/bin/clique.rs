@@ -16,7 +16,7 @@ fn main() {
             }
         };
 
-        let res = solve_clq(&graph, &Clock::new(3600));
+        let res = solve_clq(&graph, &mut Clock::new(3600));
         println!("Result : {}", res.0);
     }
 }

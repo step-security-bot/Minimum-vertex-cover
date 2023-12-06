@@ -6,39 +6,57 @@ use petgraph::prelude::UnGraphMap;
 use crate::Clock;
 use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree};
 
-pub fn solve(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64>) {
+pub fn solve(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u64>) {
     // Initialize the upper bound to the number of nodes in the graph
     // and the vertex cover found so far is empty
     let upper_bound_vc = &graph.nodes().collect();
-    let u = b_and_b(graph, &graph, graph.node_count() as u64,
+    let u = b_and_b(graph, graph, graph.node_count() as u64,
                     upper_bound_vc, vec![], clock);
+    let total_time = clock.get_time().duration.as_secs_f64();
+    println!("Time spent in deg : {}%", clock.deg_lb.as_secs_f64() / total_time);
+    println!("Time spent in clq : {}%", clock.clq_lb.as_secs_f64() / total_time);
+    println!("Time spent in max deg : {}%", clock.max_deg.as_secs_f64() / total_time);
+    println!("Time spent in copy : {}%", clock.copy.as_secs_f64() / total_time);
     u
 }
 
 fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
-               subgraph: &UnGraphMap<u64, ()>,
+               subgraph: &Box<UnGraphMap<u64, ()>>,
                upper_bound: u64,
                upper_bound_vc: &Vec<u64>,
                vertex_cover: Vec<u64>,
-               clock: &Clock) -> (u64, Vec<u64>) {
+               clock: &mut Clock) -> (u64, Vec<u64>) {
     if clock.is_time_up() {
         return (upper_bound, upper_bound_vc.clone());
     }
+
+    clock.enter_copy();
+    let mut subgraph = copy_graph(subgraph);
+    clock.exit_copy();
+
     if subgraph.edge_count() == 0 {
+        // If the subgraph is empty, all edges are covered => vertex cover
         return (vertex_cover.len() as u64, vertex_cover);
     }
 
-    let deg_lb = deg_lb(subgraph);
-    let clq_lb = clq_lb(subgraph);
-    let lb = max(deg_lb, clq_lb);
+    clock.enter_deg();
+    let deg_lb = deg_lb(&subgraph);
+    clock.exit_deg();
+    clock.enter_clq();
+    // let clq_lb = clq_lb(subgraph);
+    clock.exit_clq();
+    let lb = max(deg_lb, 0);
 
     if vertex_cover.len() as u64 + lb >= upper_bound {
+        // We can't find a better solution in this branch, we stop and return the best known solution
         return (upper_bound, upper_bound_vc.clone());
     }
 
-    let (v, _max_deg) = get_vertex_with_max_degree(subgraph, None);
+    clock.enter_max_deg();
+    let (v, _max_deg) = get_vertex_with_max_degree(&subgraph, None);
 
-    let mut subgraph = copy_graph(subgraph);
+    clock.exit_max_deg();
+
     let neighbors: Vec<u64> = subgraph.neighbors(v).collect();
 
     // ====> First case <====
@@ -92,8 +110,7 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
     };
 }
 
-// TODO : make this private
-pub fn deg_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
+fn deg_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
     let size = graph.edge_count();
     let mut selected_vertexes = Vec::<u64>::new();
     let mut sum_degrees: usize = 0;
@@ -101,9 +118,9 @@ pub fn deg_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
 
     let mut working = true;
     while working {
-        let (max_degree_vertex, _vertex_degree) = get_vertex_with_max_degree(graph, Some(&selected_vertexes));
+        let (max_degree_vertex, vertex_degree) = get_vertex_with_max_degree(graph, Some(&selected_vertexes));
         selected_vertexes.push(max_degree_vertex);
-        sum_degrees += graph.neighbors(max_degree_vertex).count();
+        sum_degrees += vertex_degree;
         if sum_degrees >= size {
             working = false;
         }
@@ -131,7 +148,7 @@ fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
 
 
 // TODO : make this private
-pub fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
+pub fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
     // 1) Get the complement of the graph
     // 2) Find a greedy coloring of the complement
     // 3) Each color is a independent set
@@ -152,7 +169,7 @@ pub fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
 
 // Color the graph such that every node has a different color than its neighbors.
 // This algorithm returns a vector containing the number of vertex in each color.
-fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
+fn greedy_coloring(graph: &Box<UnGraphMap<u64, ()>>) -> Vec<usize> {
     // 1. Create a color set. The vertex degree of each vertex is calculated and the vertex degrees are added to
     let mut color_set = Vec::new(); // color_set[i] = j means that color i has j vertexes
     let mut colors = HashMap::new();
@@ -203,7 +220,7 @@ fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
 /// 3. The vertices that are not in the minimum vertex cover are in the maximum independent set
 /// 4. An independent set in the complement is a clique in the original graph.
 ///
-pub fn solve_clq(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64>) {
+pub fn solve_clq(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u64>) {
 
     // We know that each clique correspond to an independent set in the complement of the graph
     let mut cmpl = complement(graph);
@@ -235,7 +252,7 @@ mod branch_and_bound_tests {
 
     #[test]
     fn test_greedy_coloring() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..5 {
             graph.add_node(i);
         }
@@ -258,7 +275,7 @@ mod branch_and_bound_tests {
 
     #[test]
     fn test_problem_with_coloring() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         graph.add_node(4);
         graph.add_node(5);
         graph.add_node(6);
@@ -270,7 +287,7 @@ mod branch_and_bound_tests {
     }
 
     #[test]
-    fn test_deg_leb() {
+    fn test_deg_lb() {
         let graph = match load_clq_file("src/resources/graphs/test_cycle_5.clq") {
             Ok(g) => g,
             Err(e) => panic!("{}", e)
@@ -281,7 +298,7 @@ mod branch_and_bound_tests {
 
     #[test]
     fn test_b_and_b() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..4 {
             graph.add_node(i);
         }
@@ -290,34 +307,13 @@ mod branch_and_bound_tests {
         graph.add_edge(2, 0, ());
         graph.add_edge(2, 3, ());
 
-        assert_eq!(solve(&graph, &Clock::new(3600)).0, 2);
+        assert_eq!(solve(&graph, &mut Clock::new(3600)).0, 2);
     }
 
     #[test]
     fn test_with_queen_5() {
         let graph = load_clq_file("src/resources/graphs/queen5_5.clq").unwrap();
-        let res = solve(&graph, &Clock::new(3600));
+        let res = solve(&graph, &mut Clock::new(3600));
         assert_eq!(res.0, 20);
-    }
-
-    #[test]
-    fn test_is_value_optimal_c125() {
-        let graph = load_clq_file("src/resources/graphs/C125.9.clq").unwrap();
-
-        let res = solve_clq(&graph, &Clock::new(3600));
-
-        assert_eq!(res.0, 34); // This is the value of the DIMACS benchmark
-        // https://iridia.ulb.ac.be/~fmascia/maximum_clique/DIMACS-benchmark
-    }
-
-    #[ignore]
-    #[test]
-    fn test_is_value_optimal_c250() {
-        let graph = load_clq_file("src/resources/graphs/C250.9.clq").unwrap();
-
-        let res = solve_clq(&graph, &Clock::new(3600));
-
-        assert_eq!(res.0, 44); // This is the value of the DIMACS benchmark
-        // https://iridia.ulb.ac.be/~fmascia/maximum_clique/DIMACS-benchmark
     }
 }

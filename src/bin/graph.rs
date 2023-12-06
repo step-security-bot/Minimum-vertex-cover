@@ -14,7 +14,7 @@ fn main() {
 }
 
 
-pub fn read_file() -> UnGraphMap<u64, ()> {
+pub fn read_file() -> Box<UnGraphMap<u64, ()>> {
     let file = File::open("src/resources/karate.graph").expect("");
     let reader = BufReader::new(file);
 
@@ -38,5 +38,5 @@ pub fn read_file() -> UnGraphMap<u64, ()> {
         }
     }
     println!("Graph with {} vertex and {} edges", g.node_count(), g.edge_count());
-    g
+    Box::new(g)
 }

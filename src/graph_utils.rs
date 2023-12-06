@@ -21,7 +21,7 @@ use crate::ElapseTime;
 /// use petgraph::stable_graph::NodeIndex;
 /// use vertex::graph_utils::is_vertex_cover;
 ///
-/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
 /// for i in 0..3 {
 ///    graph.add_node(i);
 /// }
@@ -34,7 +34,7 @@ use crate::ElapseTime;
 /// vertex_cover.push(1);
 /// assert!(is_vertex_cover(&graph, &vertex_cover));
 /// ```
-pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &Vec<u64>) -> bool {
+pub fn is_vertex_cover(graph: &Box<UnGraphMap<u64, ()>>, vertex_cover: &Vec<u64>) -> bool {
     for (i, j, _) in graph.all_edges() {
         if !vertex_cover.contains(&(i)) && !vertex_cover.contains(&(j)) {
             return false;
@@ -50,7 +50,7 @@ pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &Vec<u64>) -> 
 /// use petgraph::prelude::UnGraphMap;
 /// use vertex::graph_utils::is_clique;
 ///
-/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
 /// for i in 0..5 {
 ///   graph.add_node(i);
 /// }
@@ -63,7 +63,7 @@ pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &Vec<u64>) -> 
 /// graph.remove_edge(0, 1);
 /// assert!(!is_clique(&graph, &vec![0, 1, 2]));
 /// ```
-pub fn is_clique(graph: &UnGraphMap<u64, ()>, clique: &Vec<u64>) -> bool {
+pub fn is_clique(graph: &Box<UnGraphMap<u64, ()>>, clique: &Vec<u64>) -> bool {
     for i in clique {
         for j in clique {
             if i != j && !graph.contains_edge(*i, *j) {
@@ -81,7 +81,7 @@ pub fn is_clique(graph: &UnGraphMap<u64, ()>, clique: &Vec<u64>) -> bool {
 /// use petgraph::prelude::UnGraphMap;
 /// use vertex::graph_utils::is_independent_set;
 ///
-/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
 /// for i in 0..5 {
 ///  graph.add_node(i);
 /// }
@@ -92,7 +92,7 @@ pub fn is_clique(graph: &UnGraphMap<u64, ()>, clique: &Vec<u64>) -> bool {
 /// assert!(is_independent_set(&graph, &vec![3, 4]));
 /// assert!(!is_independent_set(&graph, &vec![0, 1, 2]));
 /// ```
-pub fn is_independent_set(graph: &UnGraphMap<u64, ()>, independent_set: &Vec<u64>) -> bool {
+pub fn is_independent_set(graph: &Box<UnGraphMap<u64, ()>>, independent_set: &Vec<u64>) -> bool {
     for i in independent_set {
         for j in independent_set {
             if i != j && graph.contains_edge(*i, *j) {
@@ -110,7 +110,7 @@ pub fn is_independent_set(graph: &UnGraphMap<u64, ()>, independent_set: &Vec<u64
 /// use petgraph::prelude::UnGraphMap;
 /// use vertex::graph_utils::complement;
 ///
-/// let mut g = UnGraphMap::<u64, ()>::new();
+/// let mut g = Box::new(UnGraphMap::<u64, ()>::new());
 /// for i in 0..4 {
 ///  g.add_node(i);
 /// }
@@ -122,11 +122,8 @@ pub fn is_independent_set(graph: &UnGraphMap<u64, ()>, independent_set: &Vec<u64
 /// assert_eq!(complement.node_count(), 4);
 /// assert_eq!(complement.edge_count(), 3);
 /// ```
-pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
+pub fn complement(graph: &Box<UnGraphMap<u64, ()>>) -> Box<UnGraphMap<u64, ()>> {
     let mut complement = UnGraphMap::<u64, ()>::new();
-    for node in graph.nodes() {
-        complement.add_node(node);
-    }
 
     for a in graph.nodes() {
         for b in graph.nodes() {
@@ -135,7 +132,7 @@ pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
             }
         }
     }
-    complement
+    Box::new(complement)
 }
 
 /// Load a graph from a DIMACS .col file.
@@ -170,7 +167,7 @@ pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
 /// assert!(graph.contains_edge(4, 0));
 /// assert!(graph.contains_edge(4, 1));
 /// ```
-pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> {
+pub fn load_clq_file(path: &str) -> Result<Box<UnGraphMap<u64, ()>>, Box<dyn Error>> {
     let file = match File::open(path) {
         Ok(file) => file,
         Err(e) => return Err(format!("File {:?} not found \n {:?}", path, e).into()),
@@ -221,7 +218,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
     if g.node_count() == 0 {
         return Err("Expecting graph order".into());
     }
-    Ok(g)
+    Ok(Box::new(g))
 }
 
 /// Returns the string of a given file in the DIMACS .clq format.
@@ -231,7 +228,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
 /// use petgraph::prelude::UnGraphMap;
 /// use vertex::graph_utils::graph_to_string;
 ///
-/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
 /// for i in 0..4 {
 ///     graph.add_node(i);
 /// }
@@ -241,7 +238,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
 /// let string = graph_to_string(&graph);
 /// assert_eq!(string, "p edge 4 2\ne 1 2\ne 2 3\n");
 /// ```
-pub fn graph_to_string(graph: &UnGraphMap<u64, ()>) -> String {
+pub fn graph_to_string(graph: &Box<UnGraphMap<u64, ()>>) -> String {
     let mut string = String::new();
     string.push_str(&format!("p edge {} {}\n", graph.node_count(), graph.edge_count()));
     for (i, j, _) in graph.all_edges() {
@@ -257,7 +254,7 @@ pub fn graph_to_string(graph: &UnGraphMap<u64, ()>) -> String {
 /// use petgraph::prelude::UnGraphMap;
 /// use vertex::graph_utils::get_vertex_with_max_degree;
 ///
-/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
 /// for i in 0..10 {
 ///    graph.add_node(i);
 /// }
@@ -270,7 +267,7 @@ pub fn graph_to_string(graph: &UnGraphMap<u64, ()>) -> String {
 /// assert_eq!(get_vertex_with_max_degree(&graph, None).0, 0);
 /// assert_eq!(get_vertex_with_max_degree(&graph, None).1, 3);
 /// ```
-pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>, marked_vertices: Option<&Vec<u64>>) -> (u64, usize) {
+pub fn get_vertex_with_max_degree(graph: &Box<UnGraphMap<u64, ()>>, marked_vertices: Option<&Vec<u64>>) -> (u64, usize) {
     let mut max_degree = 0;
     let mut max_degree_vertex = 0;
     for vertex in graph.nodes() {
@@ -295,7 +292,7 @@ pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>, marked_vertices: 
 ///
 /// use vertex::graph_utils::copy_graph;
 ///
-/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
 /// for i in 0..10 {
 ///   graph.add_node(i);
 /// }
@@ -307,7 +304,7 @@ pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>, marked_vertices: 
 /// assert_eq!(copy.node_count(), 10);
 /// assert_eq!(copy.edge_count(), 9);
 /// ```
-pub fn copy_graph(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
+pub fn copy_graph(graph: &Box<UnGraphMap<u64, ()>>) -> Box<UnGraphMap<u64, ()>> {
     let mut copy = UnGraphMap::<u64, ()>::new();
     for i in graph.nodes() {
         copy.add_node(i);
@@ -315,7 +312,7 @@ pub fn copy_graph(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
     for edge in graph.all_edges() {
         copy.add_edge(edge.0, edge.1, ());
     }
-    copy
+    Box::new(copy)
 }
 
 /// Structure used to store the information of a graph such as its exact value of the MVC.
@@ -346,7 +343,7 @@ pub struct YamlTime {
 ///
 /// # Panics
 /// Panics if the file cannot be opened or the graph cannot be written to the file.
-pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, path: &str) {
+pub fn add_graph_to_yaml(id: &str, format: &str, graph: &Box<UnGraphMap<u64, ()>>, path: &str) {
     let file = File::open(path)
         .expect(format!("Unable to open file {:?}", path).as_str());
     let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
@@ -602,7 +599,7 @@ mod graph_utils_tests {
 
     #[test]
     fn test_is_vertex_cover() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..3 {
             graph.add_node(i);
         }
@@ -620,7 +617,7 @@ mod graph_utils_tests {
 
     #[test]
     fn test_is_clique() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..5 {
             graph.add_node(i);
         }
@@ -636,7 +633,7 @@ mod graph_utils_tests {
 
     #[test]
     fn test_is_independent_set() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..5 {
             graph.add_node(i);
         }
@@ -650,7 +647,7 @@ mod graph_utils_tests {
 
     #[test]
     fn test_get_vertex_with_max_degree() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..10 {
             graph.add_node(i);
         }
@@ -666,7 +663,7 @@ mod graph_utils_tests {
 
     #[test]
     fn test_get_vertex_with_max_degree2() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 3..7 {
             graph.add_node(i);
         }
@@ -680,7 +677,7 @@ mod graph_utils_tests {
 
     #[test]
     fn test_copy_graph() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..10 {
             graph.add_node(i);
         }
@@ -712,7 +709,7 @@ mod graph_utils_tests {
 
     #[test]
     fn test_complement() {
-        let mut g = UnGraphMap::<u64, ()>::new();
+        let mut g = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..4 {
             g.add_node(i);
         }
@@ -742,7 +739,7 @@ mod graph_utils_tests {
 
     #[test]
     fn test_graph_to_string() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..4 {
             graph.add_node(i);
         }

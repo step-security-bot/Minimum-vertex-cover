@@ -1,6 +1,7 @@
 extern crate graph;
 
 use std::fmt::Display;
+use std::ops::Add;
 use std::time::Duration;
 
 use petgraph::prelude::UnGraphMap;
@@ -102,7 +103,16 @@ impl Display for Result {
 
 pub struct Clock {
     pub start: std::time::Instant,
-    pub limit: u64, // in seconds
+    pub limit: u64,
+    // in seconds
+    pub start_deg: std::time::Instant,
+    pub deg_lb: Duration,
+    pub start_clq: std::time::Instant,
+    pub clq_lb: Duration,
+    pub start_max_deg: std::time::Instant,
+    pub max_deg: Duration,
+    pub enter_copy: std::time::Instant,
+    pub copy: Duration,
 }
 
 impl Clock {
@@ -110,6 +120,14 @@ impl Clock {
         Clock {
             start: std::time::Instant::now(),
             limit,
+            start_deg: std::time::Instant::now(),
+            deg_lb: Duration::new(0, 0),
+            start_clq: std::time::Instant::now(),
+            clq_lb: Duration::new(0, 0),
+            start_max_deg: std::time::Instant::now(),
+            max_deg: Duration::new(0, 0),
+            enter_copy: std::time::Instant::now(),
+            copy: Duration::new(0, 0),
         }
     }
 
@@ -121,6 +139,38 @@ impl Clock {
     pub fn is_time_up(&self) -> bool {
         let elapsed = self.start.elapsed();
         elapsed.as_secs() >= self.limit
+    }
+
+    pub fn enter_deg(&mut self) {
+        self.start_deg = std::time::Instant::now();
+    }
+
+    pub fn exit_deg(&mut self) {
+        self.deg_lb = self.deg_lb.add(self.start_deg.elapsed());
+    }
+
+    pub fn enter_clq(&mut self) {
+        self.start_clq = std::time::Instant::now();
+    }
+
+    pub fn exit_clq(&mut self) {
+        self.clq_lb = self.clq_lb.add(self.start_clq.elapsed());
+    }
+
+    pub fn enter_max_deg(&mut self) {
+        self.start_max_deg = std::time::Instant::now();
+    }
+
+    pub fn exit_max_deg(&mut self) {
+        self.max_deg = self.max_deg.add(self.start_max_deg.elapsed());
+    }
+
+    pub fn enter_copy(&mut self) {
+        self.enter_copy = std::time::Instant::now();
+    }
+
+    pub fn exit_copy(&mut self) {
+        self.copy = self.copy.add(self.enter_copy.elapsed());
     }
 }
 
@@ -136,7 +186,7 @@ impl Clock {
 /// use petgraph::prelude::UnGraphMap;
 /// use vertex::{Clock, naive_search};
 ///
-/// let mut graph = UnGraphMap::<u64, ()>::new();
+/// let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
 /// for i in 0..4 {
 ///    graph.add_node(i);
 /// }
@@ -146,9 +196,9 @@ impl Clock {
 /// graph.add_edge(2, 3, ());
 ///
 /// let expected_vertex_cover = 2; //[0, 2] or [1, 2]
-/// assert_eq!(naive_search(&graph, &Clock::new(3600)).0, expected_vertex_cover);
+/// assert_eq!(naive_search(&graph, &mut Clock::new(3600)).0, expected_vertex_cover);
 /// ```
-pub fn naive_search(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64>) {
+pub fn naive_search(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u64>) {
     if graph.node_count() > 64 {
         panic!("This algorithm can only be used on graph with less than 65 vertices")
     }
@@ -186,10 +236,10 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>, clock: &Clock) -> (u64, Vec<u64
 /// println!("{}", res);
 /// ```
 pub fn run_algorithm(graph_id: &str,
-                     graph: &UnGraphMap<u64, ()>,
-                     f: &dyn Fn(&UnGraphMap<u64, ()>, &Clock) -> (u64, Vec<u64>),
+                     graph: &Box<UnGraphMap<u64, ()>>,
+                     f: &dyn Fn(&Box<UnGraphMap<u64, ()>>, &mut Clock) -> (u64, Vec<u64>),
                      cmpl: bool) -> Result {
-    let g: UnGraphMap<u64, ()>;
+    let g: Box<UnGraphMap<u64, ()>>;
     if cmpl {
         g = graph_utils::complement(graph);
         let density = (2 * g.edge_count()) as f64 / (g.node_count() * (g.node_count() - 1)) as f64;
@@ -206,11 +256,11 @@ pub fn run_algorithm(graph_id: &str,
                  density);
     }
 
-    let limit = 3600;
+    let limit = 900;
 
-    let clock: Clock = Clock::new(limit);
+    let mut clock: Clock = Clock::new(limit);
 
-    let res = f(&g, &clock);
+    let res = f(&g, &mut clock);
 
     let elapsed = clock.get_time();
 
@@ -266,7 +316,7 @@ mod algorithms_tests {
 
     #[test]
     fn test_naive_algorithm() {
-        let mut graph = UnGraphMap::<u64, ()>::new();
+        let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..4 {
             graph.add_node(i);
         }
@@ -276,7 +326,7 @@ mod algorithms_tests {
         graph.add_edge(2, 3, ());
 
         let expected_vertex_cover = 2;
-        assert_eq!(naive_search(&graph, &Clock::new(3600)).0, expected_vertex_cover);
+        assert_eq!(naive_search(&graph, &mut Clock::new(3600)).0, expected_vertex_cover);
     }
 
     #[test]
