@@ -157,18 +157,14 @@ pub fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
     clock.enter_clq_compl();
     let compl = complement(graph);
     clock.exit_clq_compl();
-    
+
     // 2) Find a greedy coloring of the complement
     clock.enter_color_set();
     let color_set = greedy_coloring(&compl);
     clock.exit_color_set();
 
     // Adds the number of nodes in each color minus 1 = lower bound. If a value is 0, change it to 1
-    clock.enter_res();
-    let res = color_set.iter().map(|&x| x as u64 - 1).sum::<u64>();
-    clock.exit_res();
-    
-    res
+    color_set.iter().map(|&x| x as u64 - 1).sum::<u64>()
 }
 
 
