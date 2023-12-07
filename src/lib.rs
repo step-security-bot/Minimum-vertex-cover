@@ -46,37 +46,48 @@ impl Display for ElapseTime {
     }
 }
 
-pub struct Result {
+pub struct MVCResult {
     pub graph_id: String,
     pub value: u64,
     pub set: Vec<u64>,
     pub is_optimal: Option<bool>,
     pub time: ElapseTime,
     pub is_time_limit: bool,
+    pub is_compl: bool,
 }
 
-impl Result {
-    pub fn new(graph_id: String, value: u64, mvc: Vec<u64>, time: ElapseTime, is_time_limit: bool) -> Result {
-        let is_optimal = is_optimal_value(&graph_id, value, None);
-        Result {
+impl MVCResult {
+    pub fn new(graph_id: String, value: u64, mvc: Vec<u64>, time: ElapseTime, is_time_limit: bool, is_compl: bool) -> MVCResult {
+        let is_optimal = if is_compl {
+            is_optimal_value(&graph_id, value, Some("src/resources/clique_data.yml"))
+        } else {
+            is_optimal_value(&graph_id, value, None)
+        };
+        MVCResult {
             graph_id,
             value,
             set: mvc,
             is_optimal,
             time,
             is_time_limit,
+            is_compl,
         }
     }
 }
 
-impl Display for Result {
+impl Display for MVCResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let opt_message = {
             if !self.is_optimal.is_none() {
                 if self.is_optimal.unwrap() {
                     "\t The value is optimal (as long as the data is correct in the yaml file)".to_string()
                 } else {
-                    let true_opt = get_optimal_value(&self.graph_id, None).unwrap_or(0);
+
+                    let true_opt = if self.is_compl {
+                            get_optimal_value(&self.graph_id, Some("src/resources/clique_data.yml")).unwrap_or(0)
+                        } else {
+                        get_optimal_value(&self.graph_id, None).unwrap_or(0)
+                    };
                     format!("\t The value is not optimal and the correct value is {}", true_opt).to_string()
                 }
             } else {
@@ -103,7 +114,8 @@ impl Display for Result {
 
 pub struct Clock {
     pub start: std::time::Instant,
-    pub limit: u64,
+    limit: u64,
+    elapsed: Option<Duration>,
     // in seconds
     pub start_deg: std::time::Instant,
     pub deg_lb: Duration,
@@ -113,6 +125,10 @@ pub struct Clock {
     pub max_deg: Duration,
     pub enter_copy: std::time::Instant,
     pub copy: Duration,
+    pub enter_clq_compl: std::time::Instant,
+    pub clq_compl: Duration,
+    pub enter_color_set: std::time::Instant,
+    pub color_set: Duration,
 }
 
 impl Clock {
@@ -120,6 +136,7 @@ impl Clock {
         Clock {
             start: std::time::Instant::now(),
             limit,
+            elapsed: None,
             start_deg: std::time::Instant::now(),
             deg_lb: Duration::new(0, 0),
             start_clq: std::time::Instant::now(),
@@ -128,12 +145,26 @@ impl Clock {
             max_deg: Duration::new(0, 0),
             enter_copy: std::time::Instant::now(),
             copy: Duration::new(0, 0),
+            enter_clq_compl: std::time::Instant::now(),
+            clq_compl: Duration::new(0, 0),
+            enter_color_set: std::time::Instant::now(),
+            color_set: Duration::new(0, 0),
         }
     }
 
     pub fn get_time(&self) -> ElapseTime {
-        let elapsed = self.start.elapsed();
-        ElapseTime::new(elapsed)
+        if self.elapsed.is_none() {
+            let elapsed = self.start.elapsed();
+            ElapseTime::new(elapsed)
+        } else {
+            ElapseTime::new(self.elapsed.unwrap())
+        }
+    }
+
+    pub fn stop_timer(&mut self) {
+        if self.elapsed.is_none() {
+            self.elapsed = Some(self.start.elapsed());
+        }
     }
 
     pub fn is_time_up(&self) -> bool {
@@ -171,6 +202,22 @@ impl Clock {
 
     pub fn exit_copy(&mut self) {
         self.copy = self.copy.add(self.enter_copy.elapsed());
+    }
+
+    pub fn enter_clq_compl(&mut self) {
+        self.enter_clq_compl = std::time::Instant::now();
+    }
+
+    pub fn exit_clq_compl(&mut self) {
+        self.clq_compl = self.clq_compl.add(self.enter_clq_compl.elapsed());
+    }
+
+    pub fn enter_color_set(&mut self) {
+        self.enter_color_set = std::time::Instant::now();
+    }
+
+    pub fn exit_color_set(&mut self) {
+        self.color_set = self.color_set.add(self.enter_color_set.elapsed());
     }
 }
 
@@ -238,7 +285,7 @@ pub fn naive_search(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64
 pub fn run_algorithm(graph_id: &str,
                      graph: &Box<UnGraphMap<u64, ()>>,
                      f: &dyn Fn(&Box<UnGraphMap<u64, ()>>, &mut Clock) -> (u64, Vec<u64>),
-                     cmpl: bool) -> Result {
+                     cmpl: bool) -> MVCResult {
     let g: Box<UnGraphMap<u64, ()>>;
     if cmpl {
         g = graph_utils::complement(graph);
@@ -267,7 +314,7 @@ pub fn run_algorithm(graph_id: &str,
     assert!(is_vertex_cover(&g, &res.1));
     assert_eq!(res.0, res.1.len() as u64);
 
-    let res = Result::new(graph_id.to_string(), res.0, res.1, elapsed, clock.is_time_up());
+    let res = MVCResult::new(graph_id.to_string(), res.0, res.1, elapsed, clock.is_time_up(), cmpl);
     return res;
 }
 

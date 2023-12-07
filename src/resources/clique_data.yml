@@ -32,132 +32,132 @@
   format: clq
   order: 200
   size: 9876
-  val: 0
+  val: 188
 - id: brock200_4.clq
   format: clq
   order: 200
   size: 13089
-  val: 0
+  val: 183
 - id: brock400_2.clq
   format: clq
   order: 400
   size: 59786
-  val: 392
+  val: 371
 - id: brock400_4.clq
   format: clq
   order: 400
   size: 59765
-  val: 393
+  val: 367
 - id: brock800_2.clq
   format: clq
   order: 800
   size: 208166
-  val: 0
+  val: 776
 - id: brock800_4.clq
   format: clq
   order: 800
   size: 207643
-  val: 0
+  val: 774
 - id: C125.9.clq
   format: clq
   order: 125
   size: 6963
-  val: 0
+  val: 91
 - id: C250.9.clq
   format: clq
   order: 250
   size: 27984
-  val: 245
+  val: 206
 - id: C500.9.clq
   format: clq
   order: 500
   size: 112332
-  val: 495
+  val: 443
 - id: C1000.9.clq
   format: clq
   order: 1000
   size: 450079
-  val: 994
+  val: 932
 - id: C2000.5.clq
   format: clq
   order: 2000
   size: 999836
-  val: 0
+  val: 1984
 - id: C2000.9.clq
   format: clq
   order: 2000
   size: 1799532
-  val: 1994
+  val: 1920
 - id: C4000.5.clq
   format: clq
   order: 4000
   size: 4000268
-  val: 0
+  val: 3982
 - id: gen200_p0.9_44.clq
   format: clq
   order: 200
   size: 17910
-  val: 0
+  val: 156
 - id: gen200_p0.9_55.clq
   format: clq
   order: 200
   size: 17910
-  val: 0
+  val: 145
 - id: gen400_p0.9_55.clq
   format: clq
   order: 400
   size: 71820
-  val: 392
+  val: 345
 - id: gen400_p0.9_65.clq
   format: clq
   order: 400
   size: 71820
-  val: 393
+  val: 335
 - id: gen400_p0.9_75.clq
   format: clq
   order: 400
   size: 71820
-  val: 394
+  val: 325
 - id: hamming8-4.clq
   format: clq
   order: 256
   size: 20864
-  val: 0
+  val: 240
 - id: hamming10-4.clq
   format: clq
   order: 1024
   size: 434176
-  val: 1004
+  val: 984
 - id: keller4.clq
   format: clq
   order: 171
   size: 9435
-  val: 0
+  val: 160
 - id: keller5.clq
   format: clq
   order: 776
   size: 225990
-  val: 754
+  val: 749
 - id: keller6.clq
   format: clq
   order: 3361
   size: 4619898
-  val: 3298
+  val: 3302
 - id: MANN_a27.clq
   format: clq
   order: 378
   size: 70551
-  val: 375
+  val: 252
 - id: MANN_a45.clq
   format: clq
   order: 1035
   size: 533115
-  val: 1032
+  val: 690
 - id: MANN_a81.clq
   format: clq
   order: 3321
   size: 5506380
-  val: 3318
+  val: 2221
 - id: p_hat300-1.clq
   format: clq
   order: 300
@@ -167,39 +167,39 @@
   format: clq
   order: 300
   size: 21928
-  val: 0
+  val: 275
 - id: p_hat300-3.clq
   format: clq
   order: 300
   size: 33390
-  val: 291
+  val: 264
 - id: p_hat700-1.clq
   format: clq
   order: 700
   size: 60999
-  val: 0
+  val: 689
 - id: p_hat700-2.clq
   format: clq
   order: 700
   size: 121728
-  val: 0
+  val: 656
 - id: p_hat700-3.clq
   format: clq
   order: 700
   size: 183010
-  val: 0
+  val: 638
 - id: p_hat1500-1.clq
   format: clq
   order: 1500
   size: 284923
-  val: 0
+  val: 1488
 - id: p_hat1500-2.clq
   format: clq
   order: 1500
   size: 568960
-  val: 0
+  val: 1435
 - id: p_hat1500-3.clq
   format: clq
   order: 1500
   size: 847244
-  val: 0
+  val: 1406

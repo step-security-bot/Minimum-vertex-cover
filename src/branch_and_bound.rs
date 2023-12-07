@@ -12,11 +12,6 @@ pub fn solve(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u
     let upper_bound_vc = &graph.nodes().collect();
     let u = b_and_b(graph, graph, graph.node_count() as u64,
                     upper_bound_vc, vec![], clock);
-    let total_time = clock.get_time().duration.as_secs_f64();
-    println!("Time spent in deg : {}%", clock.deg_lb.as_secs_f64() / total_time);
-    println!("Time spent in clq : {}%", clock.clq_lb.as_secs_f64() / total_time);
-    println!("Time spent in max deg : {}%", clock.max_deg.as_secs_f64() / total_time);
-    println!("Time spent in copy : {}%", clock.copy.as_secs_f64() / total_time);
     u
 }
 
@@ -39,21 +34,24 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
         return (vertex_cover.len() as u64, vertex_cover);
     }
 
+    let (v, _max_deg) = get_vertex_with_max_degree(&subgraph, None);
+
     clock.enter_deg();
-    let deg_lb = deg_lb(&subgraph);
+    // let deg_lb = deg_lb(&subgraph);
     clock.exit_deg();
     clock.enter_clq();
-    // let clq_lb = clq_lb(subgraph);
+    let clq_lb = clq_lb(&subgraph, clock);
     clock.exit_clq();
-    let lb = max(deg_lb, 0);
+    let lb = max(0 , clq_lb);
 
-    if vertex_cover.len() as u64 + lb >= upper_bound {
+    // let lb: u64 =  ((subgraph.edge_count() / _max_deg) as f64).ceil() as u64;
+
+    if vertex_cover.len() as u64 + lb  >= upper_bound {
         // We can't find a better solution in this branch, we stop and return the best known solution
         return (upper_bound, upper_bound_vc.clone());
     }
 
     clock.enter_max_deg();
-    let (v, _max_deg) = get_vertex_with_max_degree(&subgraph, None);
 
     clock.exit_max_deg();
 
@@ -136,7 +134,7 @@ fn deg_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
     if edges_left == 0 {
         selected_vertexes.len() as u64
     } else {
-        let estim = (edges_left / graph.neighbors(get_vertex_with_max_degree(&graph, Some(&selected_vertexes)).0).count()) as f64;
+        let estim = (edges_left / get_vertex_with_max_degree(&graph, Some(&selected_vertexes)).1) as f64;
         selected_vertexes.len() as u64 + estim.floor() as u64
     }
 }
@@ -148,7 +146,7 @@ fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
 
 
 // TODO : make this private
-pub fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
+pub fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
     // 1) Get the complement of the graph
     // 2) Find a greedy coloring of the complement
     // 3) Each color is a independent set
@@ -156,14 +154,21 @@ pub fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
     // 5) Adds the numbers of nodes in each clique minus 1 (a clique is a complete graph)
 
     // 1) Get the complement of the graph
+    clock.enter_clq_compl();
     let compl = complement(graph);
-
+    clock.exit_clq_compl();
+    
     // 2) Find a greedy coloring of the complement
+    clock.enter_color_set();
     let color_set = greedy_coloring(&compl);
-
+    clock.exit_color_set();
 
     // Adds the number of nodes in each color minus 1 = lower bound. If a value is 0, change it to 1
-    color_set.iter().map(|&x| x as u64 - 1).sum::<u64>()
+    clock.enter_res();
+    let res = color_set.iter().map(|&x| x as u64 - 1).sum::<u64>();
+    clock.exit_res();
+    
+    res
 }
 
 
@@ -212,37 +217,6 @@ fn greedy_coloring(graph: &Box<UnGraphMap<u64, ()>>) -> Vec<usize> {
     color_set
 }
 
-
-/// Solve the maximum clique problem by solving the minimum vertex cover problem.  
-/// Algorithm : 
-/// 1. Computes the complement of the graph
-/// 2. Solves the minimum vertex cover problem on the complement
-/// 3. The vertices that are not in the minimum vertex cover are in the maximum independent set
-/// 4. An independent set in the complement is a clique in the original graph.
-///
-pub fn solve_clq(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u64>) {
-
-    // We know that each clique correspond to an independent set in the complement of the graph
-    let mut cmpl = complement(graph);
-
-    // The complement of a maximum independent set is a minimum vertex cover
-    let upper_bound_vc = &cmpl.nodes().collect();
-    let mvc_res = b_and_b(graph, &mut cmpl,
-                          graph.node_count() as u64, upper_bound_vc,
-                          vec![], clock);
-
-
-    // The complement of a minimum vertex cover is a maximum independent set
-    let mut res_set = Vec::new();
-    for node in cmpl.nodes() {
-        if !mvc_res.1.contains(&node) {
-            res_set.push(node);
-        }
-    }
-
-    // |V| - |MVC| = |MIS|
-    (graph.node_count() as u64 - mvc_res.0, res_set)
-}
 
 #[cfg(test)]
 mod branch_and_bound_tests {
