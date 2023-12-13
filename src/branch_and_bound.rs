@@ -49,7 +49,6 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
     clock.exit_clq();
     let lb = max(deg_lb, clq_lb);
 
-    // let lb: u64 =  ((subgraph.edge_count() / _max_deg) as f64).ceil() as u64;
 
     if vertex_cover.len() as u64 + lb  >= upper_bound {
         // We can't find a better solution in this branch, we stop and return the best known solution
@@ -110,7 +109,7 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
 }
 
 fn deg_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
-    // TODO : upgrade this function
+
     let size = graph.edge_count();
     let mut selected_vertexes = Vec::<u64>::new();
     let mut sum_degrees: usize = 0;
@@ -119,7 +118,8 @@ fn deg_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
 
     let mut working = true;
     while working {
-        let (max_degree_vertex, _vertex_degree) = get_vertex_with_max_degree(&subgraph, Some(&selected_vertexes));
+        // Get the vertex with the highest degree in the subgraph.
+        let (max_degree_vertex, _vertex_degree) = get_vertex_with_max_degree(&subgraph, None);
         selected_vertexes.push(max_degree_vertex);
         sum_degrees += graph.neighbors(max_degree_vertex).count();
         subgraph.remove_node(max_degree_vertex);
@@ -129,10 +129,11 @@ fn deg_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
     }
 
     let edges_left = subgraph.edge_count();
+    let next_vertex = get_vertex_with_max_degree(&subgraph, None).0;
     if edges_left == 0 {
         selected_vertexes.len() as u64
     } else {
-        let estim = (edges_left / get_vertex_with_max_degree(graph, Some(&selected_vertexes)).1) as f64;
+        let estim = (edges_left / graph.neighbors(next_vertex).count()) as f64;
         (selected_vertexes.len() as f64 + estim).floor() as u64
     }
 }

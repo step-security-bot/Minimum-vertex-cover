@@ -65,13 +65,14 @@ fn output_reaction(res: MVCResult, clock: &Clock) {
     println!("Time spent in color set : {}%", round(clock.color_set.as_secs_f64() * 100.0
                             / clock.get_time().duration.as_secs_f64(), 4));
 
-
-    let comment = "sketch degLB + clqLB";
+    /*
+    let comment = "Reversed recursive calls (2 copy)";
     add_time_to_yaml(&res.graph_id,
                      res.value,
                      res.time,
                      res.is_time_limit,
                      "clique",
                      comment);
+     */
 
 }

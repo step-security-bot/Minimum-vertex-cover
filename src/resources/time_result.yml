@@ -5,6 +5,12 @@ test.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-13 19:02:10
+  mvc_val: 2
+  time: 0min 0s 0ms 30µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Reversed recursive calls (2 copy)
 myciel3.clq:
 - date: 2023-12-13 13:58:45
   mvc_val: 9
@@ -12,6 +18,12 @@ myciel3.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-13 19:02:17
+  mvc_val: 9
+  time: 0min 0s 0ms 235µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Reversed recursive calls (2 copy)
 myciel4.clq:
 - date: 2023-12-13 13:58:47
   mvc_val: 21
@@ -47,6 +59,12 @@ brock200_2.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-13 19:02:51
+  mvc_val: 188
+  time: 0min 4s 185ms 492µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Reversed recursive calls (2 copy)
 brock200_4.clq:
 - date: 2023-12-13 14:00:03
   mvc_val: 183
@@ -54,6 +72,12 @@ brock200_4.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-13 19:03:56
+  mvc_val: 183
+  time: 0min 57s 286ms 3µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Reversed recursive calls (2 copy)
 brock400_2.clq: null
 brock400_4.clq: null
 brock800_2.clq: null
@@ -65,6 +89,12 @@ C125.9.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-13 19:00:07
+  mvc_val: 91
+  time: 0min 54s 977ms 479µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Reversed recursive calls (2 copy)
 C250.9.clq: null
 C500.9.clq: null
 C1000.9.clq: null
