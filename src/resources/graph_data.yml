@@ -137,7 +137,7 @@
   format: clq
   order: 776
   size: 225990
-  val: 754
+  val: 745
 - id: keller6.clq
   format: clq
   order: 3361
@@ -162,12 +162,12 @@
   format: clq
   order: 300
   size: 10933
-  val: 292
+  val: 261
 - id: p_hat300-2.clq
   format: clq
   order: 300
   size: 21928
-  val: 0
+  val: 273
 - id: p_hat300-3.clq
   format: clq
   order: 300

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use petgraph::prelude::UnGraphMap;
 
 use crate::Clock;
-use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree};
+use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree, is_vertex_cover};
 
 pub fn solve(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u64>) {
     // Initialize the upper bound to the number of nodes in the graph
@@ -12,6 +12,8 @@ pub fn solve(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u
     let upper_bound_vc = &graph.nodes().collect();
     let u = b_and_b(graph, graph, graph.node_count() as u64,
                     upper_bound_vc, vec![], clock);
+
+    assert!(is_vertex_cover(graph, &u.1));
     u
 }
 
@@ -34,15 +36,18 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
         return (vertex_cover.len() as u64, vertex_cover);
     }
 
+    clock.enter_max_deg();
     let (v, _max_deg) = get_vertex_with_max_degree(&subgraph, None);
+    clock.exit_max_deg();
 
     clock.enter_deg();
-    // let deg_lb = deg_lb(&subgraph);
+    let deg_lb = deg_lb(&subgraph);
     clock.exit_deg();
+
     clock.enter_clq();
     let clq_lb = clq_lb(&subgraph, clock);
     clock.exit_clq();
-    let lb = max(0 , clq_lb);
+    let lb = max(deg_lb, clq_lb);
 
     // let lb: u64 =  ((subgraph.edge_count() / _max_deg) as f64).ceil() as u64;
 
@@ -50,10 +55,6 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
         // We can't find a better solution in this branch, we stop and return the best known solution
         return (upper_bound, upper_bound_vc.clone());
     }
-
-    clock.enter_max_deg();
-
-    clock.exit_max_deg();
 
     let neighbors: Vec<u64> = subgraph.neighbors(v).collect();
 
@@ -109,33 +110,30 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
 }
 
 fn deg_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
+    // TODO : upgrade this function
     let size = graph.edge_count();
     let mut selected_vertexes = Vec::<u64>::new();
     let mut sum_degrees: usize = 0;
 
+    let mut subgraph = copy_graph(graph);
 
     let mut working = true;
     while working {
-        let (max_degree_vertex, vertex_degree) = get_vertex_with_max_degree(graph, Some(&selected_vertexes));
+        let (max_degree_vertex, _vertex_degree) = get_vertex_with_max_degree(&subgraph, Some(&selected_vertexes));
         selected_vertexes.push(max_degree_vertex);
-        sum_degrees += vertex_degree;
+        sum_degrees += graph.neighbors(max_degree_vertex).count();
+        subgraph.remove_node(max_degree_vertex);
         if sum_degrees >= size {
             working = false;
         }
     }
 
-    let mut edges_left = 0;
-    for (u, v, ()) in graph.all_edges() {
-        if !selected_vertexes.contains(&u) && !selected_vertexes.contains(&v) {
-            edges_left += 1;
-        }
-    }
-
+    let edges_left = subgraph.edge_count();
     if edges_left == 0 {
         selected_vertexes.len() as u64
     } else {
-        let estim = (edges_left / get_vertex_with_max_degree(&graph, Some(&selected_vertexes)).1) as f64;
-        selected_vertexes.len() as u64 + estim.floor() as u64
+        let estim = (edges_left / get_vertex_with_max_degree(graph, Some(&selected_vertexes)).1) as f64;
+        (selected_vertexes.len() as f64 + estim).floor() as u64
     }
 }
 
@@ -145,8 +143,8 @@ fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
 }
 
 
-// TODO : make this private
-pub fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
+fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
+    // TODO : upgrade this
     // 1) Get the complement of the graph
     // 2) Find a greedy coloring of the complement
     // 3) Each color is a independent set
@@ -212,7 +210,6 @@ fn greedy_coloring(graph: &Box<UnGraphMap<u64, ()>>) -> Vec<usize> {
     }
     color_set
 }
-
 
 #[cfg(test)]
 mod branch_and_bound_tests {

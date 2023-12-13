@@ -2,17 +2,17 @@
   format: col
   order: 11
   size: 20
-  val: 6
+  val: 9
 - id: myciel4.clq
   format: col
   order: 23
   size: 71
-  val: 12
+  val: 21
 - id: petersen.clq
   format: col
   order: 10
   size: 15
-  val: 6
+  val: 8
 - id: queen5_5.clq
   format: col
   order: 25
@@ -22,7 +22,7 @@
   format: col
   order: 5
   size: 6
-  val: 3
+  val: 2
 - id: test2.clq
   format: clq
   order: 8

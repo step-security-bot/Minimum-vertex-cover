@@ -66,11 +66,12 @@ fn output_reaction(res: MVCResult, clock: &Clock) {
                             / clock.get_time().duration.as_secs_f64(), 4));
 
 
-    let comment = "degLB(mod) + clqLB with Box<T>";
+    let comment = "sketch degLB + clqLB";
     add_time_to_yaml(&res.graph_id,
                      res.value,
                      res.time,
                      res.is_time_limit,
                      "clique",
                      comment);
+
 }
