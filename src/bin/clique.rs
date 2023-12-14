@@ -26,7 +26,8 @@ fn main() {
 
 
 fn find_max_clique(graph_id: &str, graph: &Box<UnGraphMap<u64, ()>>) -> () {
-    let g = complement(graph);let density = (2 * g.edge_count()) as f64 / (g.node_count() * (g.node_count() - 1)) as f64;
+    let g = complement(graph);
+    let density = (2 * g.edge_count()) as f64 / (g.node_count() * (g.node_count() - 1)) as f64;
     println!("Finding max clique of the graph. Specificity of the complement : \nOrder = {} and size = {}. Density = {}",
              g.node_count(),
              g.edge_count(),
@@ -40,8 +41,10 @@ fn find_max_clique(graph_id: &str, graph: &Box<UnGraphMap<u64, ()>>) -> () {
 
     assert!(is_vertex_cover(&g, &res.1));
 
+    let clique_val = (g.node_count() - res.1.len()) as u64;
 
-    let res = MVCResult::new(graph_id.to_string(), res.0, res.1, clock.get_time(), clock.is_time_up(), true);
+
+    let res = MVCResult::new(graph_id.to_string(), clique_val, res.1, clock.get_time(), clock.is_time_up(), true);
 
     output_reaction(res, &clock);
 
