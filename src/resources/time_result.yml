@@ -11,6 +11,12 @@ test.clq:
   is_time_limit: false
   algorithm: clique
   comment: Reversed recursive calls (2 copy)
+- date: 2023-12-14 17:53:06
+  mvc_val: 2
+  time: 0min 0s 0ms 17µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 myciel3.clq:
 - date: 2023-12-13 13:58:45
   mvc_val: 2
@@ -24,6 +30,12 @@ myciel3.clq:
   is_time_limit: false
   algorithm: clique
   comment: Reversed recursive calls (2 copy)
+- date: 2023-12-14 17:53:12
+  mvc_val: 2
+  time: 0min 0s 0ms 179µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 myciel4.clq:
 - date: 2023-12-13 13:58:47
   mvc_val: 2
@@ -31,6 +43,12 @@ myciel4.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-14 17:53:14
+  mvc_val: 2
+  time: 0min 0s 0ms 975µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 petersen.clq:
 - date: 2023-12-13 13:58:52
   mvc_val: 2
@@ -38,6 +56,12 @@ petersen.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-14 17:53:22
+  mvc_val: 2
+  time: 0min 0s 0ms 112µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 queen5_5.clq:
 - date: 2023-12-13 13:59:00
   mvc_val: 5
@@ -45,6 +69,12 @@ queen5_5.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-14 17:53:32
+  mvc_val: 5
+  time: 0min 0s 1ms 383µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 test2.clq:
 - date: 2023-12-13 13:59:06
   mvc_val: 3
@@ -52,6 +82,12 @@ test2.clq:
   is_time_limit: false
   algorithm: clique
   comment: sketch degLB + clqLB
+- date: 2023-12-14 17:56:22
+  mvc_val: 2
+  time: 0min 0s 0ms 47µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 brock200_2.clq:
 - date: 2023-12-13 13:58:16
   mvc_val: 12
@@ -65,6 +101,12 @@ brock200_2.clq:
   is_time_limit: false
   algorithm: clique
   comment: Reversed recursive calls (2 copy)
+- date: 2023-12-14 17:56:29
+  mvc_val: 12
+  time: 0min 3s 344ms 294µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 brock200_4.clq:
 - date: 2023-12-13 14:00:03
   mvc_val: 17
@@ -78,6 +120,12 @@ brock200_4.clq:
   is_time_limit: false
   algorithm: clique
   comment: Reversed recursive calls (2 copy)
+- date: 2023-12-14 17:57:34
+  mvc_val: 17
+  time: 0min 31s 883ms 203µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 brock400_2.clq: null
 brock400_4.clq: null
 brock800_2.clq: null
@@ -95,6 +143,12 @@ C125.9.clq:
   is_time_limit: false
   algorithm: clique
   comment: Reversed recursive calls (2 copy)
+- date: 2023-12-14 18:00:20
+  mvc_val: 34
+  time: 0min 22s 443ms 674µs
+  is_time_limit: false
+  algorithm: clique
+  comment: clqLB with welsh powell
 C250.9.clq: null
 C500.9.clq: null
 C1000.9.clq: null

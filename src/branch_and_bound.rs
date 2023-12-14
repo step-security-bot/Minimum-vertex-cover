@@ -145,7 +145,6 @@ fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
 
 
 fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
-    // TODO : upgrade this
     // 1) Get the complement of the graph
     // 2) Find a greedy coloring of the complement
     // 3) Each color is a independent set
@@ -159,7 +158,7 @@ fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
 
     // 2) Find a greedy coloring of the complement
     clock.enter_color_set();
-    let color_set = greedy_coloring(&compl);
+    let color_set = welch_powell(&compl);
     clock.exit_color_set();
 
     // Adds the number of nodes in each color minus 1 = lower bound. If a value is 0, change it to 1
@@ -210,6 +209,75 @@ fn greedy_coloring(graph: &Box<UnGraphMap<u64, ()>>) -> Vec<usize> {
         }
     }
     color_set
+}
+
+fn welch_powell(graph: &Box<UnGraphMap<u64, ()>>) -> Vec<usize> {
+    // sort vertices by decreasing degree
+    let sorted_vertices = {
+        let mut vertices: Vec<_> = graph.nodes().collect();
+        vertices.sort_by_key(|&i| std::cmp::Reverse(graph.neighbors(i).count()));
+        vertices
+    };
+
+    // create an array of colors such as color[i] = j means that vertex i has color j
+    let mut color: Vec<i32> = {
+        let mut color = Vec::new();
+        for _ in 0..sorted_vertices.len() {
+            color.push(-1);
+        }
+        color
+    };
+    // Array such as res[i] = j means that color j colored i vertices
+    let mut res: Vec<usize> = Vec::new();
+
+    let mut vertex_to_index = HashMap::new();
+    for (i, vertex) in sorted_vertices.iter().enumerate() {
+        vertex_to_index.insert(vertex, i);
+    }
+
+    let mut current_color = 0;
+
+    loop {
+        let mut biggest_index = -1;
+        // Find the biggest vertex that is not colored
+        for i in 0..sorted_vertices.len() {
+            // vertex - 1 because vertex are numbered from 1 to n
+            if color[i] == -1 {
+                biggest_index = i as i32;
+                break;
+            }
+        }
+        if biggest_index == -1 {
+            // All vertices are colored
+            break;
+        }
+        // Color the biggest vertex
+        color[biggest_index as usize] = current_color;
+        res.push(1);
+
+        assert_eq!(color.len(), sorted_vertices.len());
+        // Color vertices that are not neighbors of vertex colored with current_color
+        for i in 0..sorted_vertices.len() {
+            if color[i] == -1 {
+                let mut can_color = true;
+                for neighbor in graph.neighbors(sorted_vertices[i]) {
+                    let index = *vertex_to_index.get(&neighbor).unwrap();
+                    if color[index] == current_color {
+                        // If a neighbor is already colored with current_color, we don't color the vertex
+                        can_color = false;
+                        break;
+                    }
+                }
+                if can_color {
+                    color[i] = current_color;
+                    res[current_color as usize] += 1;
+                }
+            }
+        }
+        current_color += 1;
+    }
+
+    res
 }
 
 #[cfg(test)]
@@ -283,5 +351,13 @@ mod branch_and_bound_tests {
         let graph = load_clq_file("src/resources/graphs/queen5_5.clq").unwrap();
         let res = solve(&graph, &mut Clock::new(3600));
         assert_eq!(res.0, 20);
+    }
+
+    #[test]
+    fn test_welsh() {
+        let g = load_clq_file("src/resources/graphs/test_welsh.clq").unwrap();
+
+        let res = welch_powell(&g);
+        assert_eq!(res, vec![3, 5, 3]);
     }
 }
