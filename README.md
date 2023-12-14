@@ -1,6 +1,7 @@
 # Minimum-vertex-cover
 Comparison of algorithms (exact and heuristic) for the minimum vertex cover problem
 
+Documentation can be found [here](https://licornerose765.github.io/Minimum-vertex-cover/)
 
 ## Algorithms
 ### Exact algorithms
