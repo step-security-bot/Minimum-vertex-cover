@@ -1,5 +1,3 @@
-extern crate graph;
-
 use std::fmt::Display;
 use std::ops::Add;
 use std::time::Duration;

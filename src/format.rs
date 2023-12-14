@@ -1,3 +1,4 @@
+/*
 use graph::{Graph, GraphConstructible, GraphNauty};
 use petgraph::graphmap::UnGraphMap;
 
@@ -103,3 +104,4 @@ mod format_test {
         assert!(graph_nauty.is_edge(2, 3));
     }
 }
+ */
