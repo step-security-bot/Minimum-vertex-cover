@@ -19,14 +19,14 @@ fn main() {
             println!("Result : {}", res);
             return;
         }
-        if args.len() == 3 && args[2] != "-u" {
-            println!("Usage: cargo run [-r] --bin b_b <graph_name> [(on complement) -u]");
+        if args.len() == 3 {
+            println!("Usage: cargo run [-r] --bin bnb <graph_name> [(on complement) -u]");
             return;
         }
 
         let res = vertex::run_algorithm(&args[1], &graph, &solve, false);
         println!("Result : {}", res);
     } else {
-        println!("Usage: cargo run [-r] --bin b_b <graph_name>");
+        println!("Usage: cargo run [-r] --bin bnb <graph_name>");
     }
 }
