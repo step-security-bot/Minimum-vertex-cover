@@ -5,20 +5,9 @@ use std::sync::Arc;
 use petgraph::prelude::UnGraphMap;
 
 use crate::Clock;
-use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree, is_vertex_cover};
+use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree};
 
-pub fn solve(graph: &UnGraphMap<u64, ()>, clock: &mut Clock) -> (u64, Vec<u64>) {
-    // Initialize the upper bound to the number of nodes in the graph
-    // and the vertex cover found so far is empty
-    let upper_bound_vc = &graph.nodes().collect();
-    let u = b_and_b(graph, graph, graph.node_count() as u64,
-                    upper_bound_vc, vec![], clock);
-
-    assert!(is_vertex_cover(graph, &u.1));
-    u
-}
-
-fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
+pub fn b_and_b(graph: &UnGraphMap<u64, ()>,
                g: &UnGraphMap<u64, ()>,
                upper_bound: u64,
                upper_bound_vc: &Vec<u64>,
@@ -179,6 +168,8 @@ fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
 
 // Color the graph such that every node has a different color than its neighbors.
 // This algorithm returns a vector containing the number of vertex in each color.
+//
+// This is a LDO algorithm (Largest Degree Order) : the vertices are ordered by decreasing degree.
 fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
     // 1. Create a color set. The vertex degree of each vertex is calculated and the vertex degrees are added to
     let mut color_set = Vec::new(); // color_set[i] = j means that color i has j vertexes
@@ -188,6 +179,7 @@ fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
     }
 
     let mut vertices_ordered_by_deg: Vec<_> = graph.nodes().collect();
+    // Sort vertices by decreasing degree
     vertices_ordered_by_deg.sort_by_key(|&i| std::cmp::Reverse(graph.neighbors(i).count()));
 
 
@@ -196,10 +188,12 @@ fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
         let mut color_found = false;
         while !color_found {
             if color_set.len() <= color {
+                // We need to add a new color to color this vertex
                 color_set.push(1);
                 colors.insert(vertex, color);
                 color_found = true;
             } else {
+                // Check if the color is already used by a neighbor
                 let is_conflict = {
                     let mut is_conflict = false;
                     for neighbor in graph.neighbors(vertex) {
@@ -210,8 +204,10 @@ fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
                     is_conflict
                 };
                 if is_conflict {
+                    // The color is already used by a neighbor, we try the next color
                     color += 1;
                 } else {
+                    // The color is not used by a neighbor, we color the vertex with this color
                     color_set[color] += 1;
                     colors.insert(vertex, color);
                     color_found = true;
@@ -293,6 +289,7 @@ fn welch_powell(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
 
 #[cfg(test)]
 mod branch_and_bound_tests {
+    use crate::branch_and_bound;
     use crate::graph_utils::load_clq_file;
 
     use super::*;
@@ -354,13 +351,13 @@ mod branch_and_bound_tests {
         graph.add_edge(2, 0, ());
         graph.add_edge(2, 3, ());
 
-        assert_eq!(solve(&graph, &mut Clock::new(3600)).0, 2);
+        assert_eq!(branch_and_bound(&graph, &mut Clock::new(3600)).0, 2);
     }
 
     #[test]
     fn test_with_queen_5() {
         let graph = load_clq_file("src/resources/graphs/queen5_5.clq").unwrap();
-        let res = solve(&graph, &mut Clock::new(3600));
+        let res = branch_and_bound(&graph, &mut Clock::new(3600));
         assert_eq!(res.0, 20);
     }
 

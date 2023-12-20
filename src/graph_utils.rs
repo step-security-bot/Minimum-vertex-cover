@@ -1,3 +1,5 @@
+//! Module containing functions to manipulate graphs used in the project.
+
 use std::error::Error;
 use std::fmt::Debug;
 use std::fs::File;
@@ -450,7 +452,6 @@ pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
 /// # Panics
 /// Panics if :
 /// - The file cannot be opened
-/// - The graph id is not in the file
 ///
 /// # example
 /// ```

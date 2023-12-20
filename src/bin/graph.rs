@@ -3,13 +3,12 @@ use std::io::{BufRead, BufReader};
 
 use petgraph::prelude::UnGraphMap;
 
-use vertex::branch_and_bound::solve;
-use vertex::run_algorithm;
+use vertex::{branch_and_bound, run_algorithm};
 
 fn main() {
     // Used to test the algorithm on a .graph file coming from a github repository
     let g = read_file();
-    let res = run_algorithm("karate.graph", &g, &solve, false);
+    let res = run_algorithm("karate.graph", &g, &branch_and_bound, false);
     println!("Result : {}", res);
 }
 

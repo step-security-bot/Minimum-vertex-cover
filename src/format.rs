@@ -1,4 +1,5 @@
-/*
+//! Module used to convert graphs from one format to another. (atm only from GraphNauty to petgraph and vice versa)
+
 use graph::{Graph, GraphConstructible, GraphNauty};
 use petgraph::graphmap::UnGraphMap;
 
@@ -104,4 +105,3 @@ mod format_test {
         assert!(graph_nauty.is_edge(2, 3));
     }
 }
- */

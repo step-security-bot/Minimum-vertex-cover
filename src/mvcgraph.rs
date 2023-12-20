@@ -1,6 +1,5 @@
 //! This module contains a custom graph implementation that is used to represent undirected graphs.
-//! The performance of the branch anc bound algorithm with petgraph was compared with this implementation.
-//! This algorithm was slower but certainly because of the lack of optimisation.
+//! We wanted to test if it was faster than the petgraph implementation. It is not.
 use std::collections::HashMap;
 use std::fmt::Error;
 use std::fs::File;
