@@ -61,9 +61,10 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>, clock: &mut Clock) -> (u64, Vec
     (res, res_subset)
 }
 
-/// Run a given algorithm on a given graph and print the result. It is the default function when you want
-/// to test your algorithm on a certain graph. It prints the result and tell you if it is optimal or not based
-/// on the data in the yaml file.
+/// Run a given algorithm on a given graph and print the result.
+///
+/// It is the default function when you want to test your algorithm on a certain graph.
+/// It prints the result and tell you if it is optimal or not based on the data in the yaml file.
 /// The algorithm must take an UnGraphMap as input and return a u64.
 ///
 /// # Example
