@@ -1,5 +1,4 @@
 use petgraph::prelude::UnGraphMap;
-use vertex::graph_utils::load_clq_file;
 
 fn main() {
     let mut graph: UnGraphMap<u64, ()> = UnGraphMap::new();

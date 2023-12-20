@@ -49,6 +49,12 @@ myciel4.clq:
   is_time_limit: false
   algorithm: clique
   comment: clqLB with welsh powell
+- date: 2023-12-20 10:53:21
+  mvc_val: 2
+  time: 0min 0s 3ms 428µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Multithreaded lower bound
 petersen.clq:
 - date: 2023-12-13 13:58:52
   mvc_val: 2
@@ -107,6 +113,12 @@ brock200_2.clq:
   is_time_limit: false
   algorithm: clique
   comment: clqLB with welsh powell
+- date: 2023-12-20 10:54:16
+  mvc_val: 12
+  time: 0min 3s 490ms 941µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Multithreaded lower bound
 brock200_4.clq:
 - date: 2023-12-13 14:00:03
   mvc_val: 17
@@ -126,6 +138,12 @@ brock200_4.clq:
   is_time_limit: false
   algorithm: clique
   comment: clqLB with welsh powell
+- date: 2023-12-20 10:55:09
+  mvc_val: 17
+  time: 0min 32s 784ms 223µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Multithreaded lower bound
 brock400_2.clq: null
 brock400_4.clq: null
 brock800_2.clq: null
@@ -149,6 +167,12 @@ C125.9.clq:
   is_time_limit: false
   algorithm: clique
   comment: clqLB with welsh powell
+- date: 2023-12-20 10:55:45
+  mvc_val: 34
+  time: 0min 21s 825ms 974µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Multithreaded lower bound
 C250.9.clq: null
 C500.9.clq: null
 C1000.9.clq: null

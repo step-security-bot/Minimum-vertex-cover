@@ -243,7 +243,7 @@ impl Clock {
 /// let expected_vertex_cover = 2; //[0, 2] or [1, 2]
 /// assert_eq!(naive_search(&graph, &mut Clock::new(3600)).0, expected_vertex_cover);
 /// ```
-pub fn naive_search(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u64>) {
+pub fn naive_search(graph: &UnGraphMap<u64, ()>, clock: &mut Clock) -> (u64, Vec<u64>) {
     if graph.node_count() > 64 {
         panic!("This algorithm can only be used on graph with less than 65 vertices")
     }
@@ -281,10 +281,10 @@ pub fn naive_search(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64
 /// println!("{}", res);
 /// ```
 pub fn run_algorithm(graph_id: &str,
-                     graph: &Box<UnGraphMap<u64, ()>>,
-                     f: &dyn Fn(&Box<UnGraphMap<u64, ()>>, &mut Clock) -> (u64, Vec<u64>),
+                     graph: &UnGraphMap<u64, ()>,
+                     f: &dyn Fn(&UnGraphMap<u64, ()>, &mut Clock) -> (u64, Vec<u64>),
                      cmpl: bool) -> MVCResult {
-    let g: Box<UnGraphMap<u64, ()>>;
+    let g: UnGraphMap<u64, ()>;
     if cmpl {
         g = graph_utils::complement(graph);
         let density = (2 * g.edge_count()) as f64 / (g.node_count() * (g.node_count() - 1)) as f64;

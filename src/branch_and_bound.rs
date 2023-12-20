@@ -1,12 +1,13 @@
 use std::cmp::max;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use petgraph::prelude::UnGraphMap;
 
 use crate::Clock;
 use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree, is_vertex_cover};
 
-pub fn solve(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u64>) {
+pub fn solve(graph: &UnGraphMap<u64, ()>, clock: &mut Clock) -> (u64, Vec<u64>) {
     // Initialize the upper bound to the number of nodes in the graph
     // and the vertex cover found so far is empty
     let upper_bound_vc = &graph.nodes().collect();
@@ -18,7 +19,7 @@ pub fn solve(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> (u64, Vec<u
 }
 
 fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
-               subgraph: &Box<UnGraphMap<u64, ()>>,
+               g: &UnGraphMap<u64, ()>,
                upper_bound: u64,
                upper_bound_vc: &Vec<u64>,
                vertex_cover: Vec<u64>,
@@ -28,7 +29,7 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
     }
 
     clock.enter_copy();
-    let mut subgraph = copy_graph(subgraph);
+    let mut subgraph = copy_graph(g);
     clock.exit_copy();
 
     if subgraph.edge_count() == 0 {
@@ -40,17 +41,8 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
     let (v, _max_deg) = get_vertex_with_max_degree(&subgraph, None);
     clock.exit_max_deg();
 
-    clock.enter_deg();
-    let deg_lb = deg_lb(&subgraph);
-    clock.exit_deg();
 
-    clock.enter_clq();
-    let clq_lb = clq_lb(&subgraph, clock);
-    clock.exit_clq();
-    let lb = max(deg_lb, clq_lb);
-
-
-    if vertex_cover.len() as u64 + lb  >= upper_bound {
+    if vertex_cover.len() as u64 + compute_lb(copy_graph(&subgraph), clock)  >= upper_bound {
         // We can't find a better solution in this branch, we stop and return the best known solution
         return (upper_bound, upper_bound_vc.clone());
     }
@@ -108,7 +100,30 @@ fn b_and_b<'a>(graph: &UnGraphMap<u64, ()>,
     };
 }
 
-fn deg_lb(graph: &Box<UnGraphMap<u64, ()>>) -> u64 {
+fn compute_lb(graph: UnGraphMap<u64, ()>, clock: &mut Clock) -> u64 {
+    let graph = Arc::new(graph);
+
+    // First thread : deg_lb
+    let shared_deg = Arc::clone(&graph);
+    let shared_clq = Arc::clone(&graph);
+    let handle_deg = std::thread::spawn(move || {
+        deg_lb(&shared_deg)
+    });
+
+    let handle_clq = std::thread::spawn(move || {
+        clq_lb(&shared_clq)
+    });
+    clock.enter_deg();
+    let deg_lb = handle_deg.join().unwrap();
+    clock.exit_deg();
+
+    clock.enter_clq();
+    let clq_lb = handle_clq.join().unwrap();
+    clock.exit_clq();
+    max(deg_lb, clq_lb)
+}
+
+fn deg_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
 
     let size = graph.edge_count();
     let mut selected_vertexes = Vec::<u64>::new();
@@ -144,7 +159,7 @@ fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
 }
 
 
-fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
+fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
     // 1) Get the complement of the graph
     // 2) Find a greedy coloring of the complement
     // 3) Each color is a independent set
@@ -152,14 +167,10 @@ fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
     // 5) Adds the numbers of nodes in each clique minus 1 (a clique is a complete graph)
 
     // 1) Get the complement of the graph
-    clock.enter_clq_compl();
     let compl = complement(graph);
-    clock.exit_clq_compl();
 
     // 2) Find a greedy coloring of the complement
-    clock.enter_color_set();
     let color_set = welch_powell(&compl);
-    clock.exit_color_set();
 
     // Adds the number of nodes in each color minus 1 = lower bound. If a value is 0, change it to 1
     color_set.iter().map(|&x| x as u64 - 1).sum::<u64>()
@@ -168,7 +179,7 @@ fn clq_lb(graph: &Box<UnGraphMap<u64, ()>>, clock: &mut Clock) -> u64 {
 
 // Color the graph such that every node has a different color than its neighbors.
 // This algorithm returns a vector containing the number of vertex in each color.
-fn greedy_coloring(graph: &Box<UnGraphMap<u64, ()>>) -> Vec<usize> {
+fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
     // 1. Create a color set. The vertex degree of each vertex is calculated and the vertex degrees are added to
     let mut color_set = Vec::new(); // color_set[i] = j means that color i has j vertexes
     let mut colors = HashMap::new();
@@ -211,7 +222,7 @@ fn greedy_coloring(graph: &Box<UnGraphMap<u64, ()>>) -> Vec<usize> {
     color_set
 }
 
-fn welch_powell(graph: &Box<UnGraphMap<u64, ()>>) -> Vec<usize> {
+fn welch_powell(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
     // sort vertices by decreasing degree
     let sorted_vertices = {
         let mut vertices: Vec<_> = graph.nodes().collect();

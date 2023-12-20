@@ -34,7 +34,7 @@ use crate::ElapseTime;
 /// vertex_cover.push(1);
 /// assert!(is_vertex_cover(&graph, &vertex_cover));
 /// ```
-pub fn is_vertex_cover(graph: &Box<UnGraphMap<u64, ()>>, vertex_cover: &Vec<u64>) -> bool {
+pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &Vec<u64>) -> bool {
     for (i, j, _) in graph.all_edges() {
         if !vertex_cover.contains(&(i)) && !vertex_cover.contains(&(j)) {
             return false;
@@ -122,7 +122,7 @@ pub fn is_independent_set(graph: &Box<UnGraphMap<u64, ()>>, independent_set: &Ve
 /// assert_eq!(complement.node_count(), 4);
 /// assert_eq!(complement.edge_count(), 3);
 /// ```
-pub fn complement(graph: &Box<UnGraphMap<u64, ()>>) -> Box<UnGraphMap<u64, ()>> {
+pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
     let mut complement = UnGraphMap::<u64, ()>::new();
 
     for a in graph.nodes() {
@@ -132,7 +132,7 @@ pub fn complement(graph: &Box<UnGraphMap<u64, ()>>) -> Box<UnGraphMap<u64, ()>> 
             }
         }
     }
-    Box::new(complement)
+    complement
 }
 
 /// Load a graph from a DIMACS .col file.
@@ -167,7 +167,7 @@ pub fn complement(graph: &Box<UnGraphMap<u64, ()>>) -> Box<UnGraphMap<u64, ()>> 
 /// assert!(graph.contains_edge(4, 0));
 /// assert!(graph.contains_edge(4, 1));
 /// ```
-pub fn load_clq_file(path: &str) -> Result<Box<UnGraphMap<u64, ()>>, Box<dyn Error>> {
+pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> {
     let file = match File::open(path) {
         Ok(file) => file,
         Err(e) => return Err(format!("File {:?} not found \n {:?}", path, e).into()),
@@ -218,7 +218,7 @@ pub fn load_clq_file(path: &str) -> Result<Box<UnGraphMap<u64, ()>>, Box<dyn Err
     if g.node_count() == 0 {
         return Err("Expecting graph order".into());
     }
-    Ok(Box::new(g))
+    Ok(g)
 }
 
 /// Returns the string of a given file in the DIMACS .clq format.
@@ -267,7 +267,7 @@ pub fn graph_to_string(graph: &Box<UnGraphMap<u64, ()>>) -> String {
 /// assert_eq!(get_vertex_with_max_degree(&graph, None).0, 0);
 /// assert_eq!(get_vertex_with_max_degree(&graph, None).1, 3);
 /// ```
-pub fn get_vertex_with_max_degree(graph: &Box<UnGraphMap<u64, ()>>, marked_vertices: Option<&Vec<u64>>) -> (u64, usize) {
+pub fn get_vertex_with_max_degree(graph: &UnGraphMap<u64, ()>, marked_vertices: Option<&Vec<u64>>) -> (u64, usize) {
     let mut max_degree = 0;
     let mut max_degree_vertex = 0;
     for vertex in graph.nodes() {
@@ -304,7 +304,7 @@ pub fn get_vertex_with_max_degree(graph: &Box<UnGraphMap<u64, ()>>, marked_verti
 /// assert_eq!(copy.node_count(), 10);
 /// assert_eq!(copy.edge_count(), 9);
 /// ```
-pub fn copy_graph(graph: &Box<UnGraphMap<u64, ()>>) -> Box<UnGraphMap<u64, ()>> {
+pub fn copy_graph(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
     let mut copy = UnGraphMap::<u64, ()>::new();
     for i in graph.nodes() {
         copy.add_node(i);
@@ -312,7 +312,7 @@ pub fn copy_graph(graph: &Box<UnGraphMap<u64, ()>>) -> Box<UnGraphMap<u64, ()>> 
     for edge in graph.all_edges() {
         copy.add_edge(edge.0, edge.1, ());
     }
-    Box::new(copy)
+    copy
 }
 
 /// Structure used to store the information of a graph such as its exact value of the MVC.
@@ -343,7 +343,7 @@ pub struct YamlTime {
 ///
 /// # Panics
 /// Panics if the file cannot be opened or the graph cannot be written to the file.
-pub fn add_graph_to_yaml(id: &str, format: &str, graph: &Box<UnGraphMap<u64, ()>>, path: &str) {
+pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, path: &str) {
     let file = File::open(path)
         .expect(format!("Unable to open file {:?}", path).as_str());
     let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();

@@ -25,7 +25,7 @@ fn main() {
 
 
 
-fn find_max_clique(graph_id: &str, graph: &Box<UnGraphMap<u64, ()>>) -> () {
+fn find_max_clique(graph_id: &str, graph: &UnGraphMap<u64, ()>) -> () {
     let g = complement(graph);
     let density = (2 * g.edge_count()) as f64 / (g.node_count() * (g.node_count() - 1)) as f64;
     println!("Finding max clique of the graph. Specificity of the complement : \nOrder = {} and size = {}. Density = {}",
@@ -68,7 +68,7 @@ fn output_reaction(res: MVCResult, clock: &Clock) {
     println!("Time spent in color set : {}%", round(clock.color_set.as_secs_f64() * 100.0
                             / clock.get_time().duration.as_secs_f64(), 4));
 
-    let comment = "clqLB with welsh powell";
+    let comment = "Multithreaded lower bound";
     add_time_to_yaml(&res.graph_id,
                      res.value,
                      res.time,
