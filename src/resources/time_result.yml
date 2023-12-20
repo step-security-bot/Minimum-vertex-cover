@@ -173,6 +173,12 @@ C125.9.clq:
   is_time_limit: false
   algorithm: clique
   comment: Multithreaded lower bound
+- date: 2023-12-20 14:36:16
+  mvc_val: 34
+  time: 0min 28s 817ms 100µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Custom graph (without multithreading)
 C250.9.clq: null
 C500.9.clq: null
 C1000.9.clq: null

@@ -414,10 +414,7 @@ fn add_graph_to_time_file(id: &str) {
 /// ```
 pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
     // TODO : this function has to be deleted later on
-    let path = match path {
-        Some(path) => path,
-        None => "src/resources/graph_data.yml",
-    };
+    let path = path.unwrap_or_else(|| "src/resources/graph_data.yml");
     let file = File::open(path)
         .expect(format!("Unable to open file {:?}", path).as_str());
 
@@ -463,10 +460,7 @@ pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
 /// assert!(!is_optimal_value("test.clq", 2, None).unwrap());
 /// ```
 pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Option<bool> {
-    let path = match path {
-        Some(path) => path,
-        None => "src/resources/graph_data.yml",
-    };
+    let path = path.unwrap_or_else(|| "src/resources/graph_data.yml");
     let file = File::open(path)
         .expect(format!("Unable to open file {:?}", path).as_str());
 
@@ -503,10 +497,7 @@ pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Option<bool> 
 /// assert_eq!(get_optimal_value("unknown_graph.clq", None), None);
 /// ```
 pub fn get_optimal_value(id: &str, path: Option<&str>) -> Option<u64> {
-    let path = match path {
-        Some(path) => path,
-        None => "src/resources/graph_data.yml",
-    };
+    let path = path.unwrap_or_else(|| "src/resources/graph_data.yml");
     let file = File::open(path)
         .expect(format!("Unable to open file {:?}", path).as_str());
 

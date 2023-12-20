@@ -11,6 +11,8 @@ pub mod graph_utils;
 pub mod format;
 pub mod branch_and_bound;
 
+pub mod mvcgraph;
+
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct ElapseTime {
