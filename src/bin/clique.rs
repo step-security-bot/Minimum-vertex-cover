@@ -49,18 +49,14 @@ fn find_max_clique(graph_id: &str, graph: &UnGraphMap<u64, ()>) -> () {
 fn output_reaction(res: MVCResult, clock: &Clock) {
     println!("================ Result ===================\n{}", res);
     println!("======== Details about performance ========");
-    println!("Time spent in deg : {}%", round(clock.deg_lb.as_secs_f64() * 100.0
+    println!("Time spent in deg : {}%", round(clock.get_subroutine_duration("deg_lb").as_secs_f64() * 100.0
         / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in clq : {}%", round(clock.clq_lb.as_secs_f64() * 100.0
+    println!("Time spent in clq : {}%", round(clock.get_subroutine_duration("clq_lb").as_secs_f64() * 100.0
             / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in max deg : {}%", round(clock.max_deg.as_secs_f64() * 100.0
+    println!("Time spent in max deg : {}%", round(clock.get_subroutine_duration("max_deg").as_secs_f64() * 100.0
                 / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in copy : {}%", round(clock.copy.as_secs_f64() * 100.0
+    println!("Time spent in copy : {}%", round(clock.get_subroutine_duration("copy").as_secs_f64() * 100.0
                     / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in clq complement : {}%", round(clock.clq_compl.as_secs_f64() * 100.0
-                        / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in color set : {}%", round(clock.color_set.as_secs_f64() * 100.0
-                            / clock.get_time().duration.as_secs_f64(), 4));
 
     let comment = "Multithreaded lower bound";
     add_time_to_yaml(&res.graph_id,

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::ops::Add;
 use std::time::Duration;
@@ -311,6 +312,7 @@ impl Display for MVCResult {
     }
 }
 
+
 /// Struct representing a clock used to measure the time taken by an algorithm and stop it if it reaches the time limit.
 ///
 /// This clock is based on the std::time::Instant struct.
@@ -325,47 +327,38 @@ impl Display for MVCResult {
 ///
 /// let elapsed = clock.get_time();
 ///
+/// clock.enter_subroutine("subroutine1");
+/// // Do something
+/// clock.exit_subroutine("subroutine1");
+/// clock.enter_subroutine("subroutine2");
+/// // Do something
+/// clock.exit_subroutine("subroutine2");
+///
 /// if clock.is_time_up() {
 ///    println!("Time is up !");
 /// }
+/// println!("Time taken by the algorithm : {}", elapsed);
+/// println!("Time taken by subroutine1 : {}", clock.get_subroutine_duration("subroutine1"));
+///
+///
 ///```
 pub struct Clock {
     pub start: std::time::Instant,
     limit: u64,
     elapsed: Option<Duration>,
-    // in seconds
-    pub start_deg: std::time::Instant,
-    pub deg_lb: Duration,
-    pub start_clq: std::time::Instant,
-    pub clq_lb: Duration,
-    pub start_max_deg: std::time::Instant,
-    pub max_deg: Duration,
-    pub enter_copy: std::time::Instant,
-    pub copy: Duration,
-    pub enter_clq_compl: std::time::Instant,
-    pub clq_compl: Duration,
-    pub enter_color_set: std::time::Instant,
-    pub color_set: Duration,
-}
 
+    // Hashmap containing the time taken by each subroutine of the algorithm.
+    // Key : name of the subroutine
+    // Value : (start time, time taken)
+    details: HashMap<String, (Option<std::time::Instant>, Duration)>,
+}
 impl Clock {
     pub fn new(limit: u64) -> Clock {
         Clock {
             start: std::time::Instant::now(),
             limit,
             elapsed: None,
-            start_deg: std::time::Instant::now(),
-            deg_lb: Duration::new(0, 0),
-            start_clq: std::time::Instant::now(),
-            clq_lb: Duration::new(0, 0),
-            start_max_deg: std::time::Instant::now(),
-            max_deg: Duration::new(0, 0),
-            enter_copy: std::time::Instant::now(),
-            copy: Duration::new(0, 0),
-            enter_clq_compl: std::time::Instant::now(),
-            clq_compl: Duration::new(0, 0),
-            enter_color_set: std::time::Instant::now(),
-            color_set: Duration::new(0, 0),
+            details: HashMap::new(),
         }
     }
 
@@ -392,52 +385,88 @@ impl Clock {
         elapsed.as_secs() >= self.limit
     }
 
-    pub fn enter_deg(&mut self) {
-        self.start_deg = std::time::Instant::now();
+    /// Enters in a subroutine of the algorithm and start the timer for this subroutine.
+    /// It creates a new start time for this subroutine but don't reset the duration.
+    ///
+    /// If the subroutine was already entered before, it will reset the start time and add the time taken since the last time it was entered.
+    /// # Example
+    /// ```rust
+    /// use std::time::Duration;
+    /// use vertex::Clock;
+    ///
+    /// let mut clock = Clock::new(3600);
+    ///
+    /// clock.enter_subroutine("subroutine1");
+    /// // Do something
+    /// clock.enter_subroutine("subroutine2");
+    /// // Do something
+    /// clock.exit_subroutine("subroutine2");
+    ///
+    /// clock.enter_subroutine("subroutine1");
+    /// // Add the time taken since the last time we entered subroutine1
+    /// clock.exit_subroutine("subroutine1");
+    /// ```
+    pub fn enter_subroutine(&mut self, name: &str) {
+        if self.details.contains_key(name) {
+            // Keep the duration but change the start time
+            let (time, duration) = self.details.get(name).unwrap();
+            if time.is_none() {
+                self.details.insert(name.to_string(), (Some(std::time::Instant::now()), *duration));
+            } else {
+                let new_duration = duration.add(time.unwrap().elapsed());
+                self.details.insert(name.to_string(), (Some(std::time::Instant::now()), new_duration));
+            }
+        } else {
+            self.details.insert(name.to_string(), (Some(std::time::Instant::now()), Duration::new(0, 0)));
+        }
     }
 
-    pub fn exit_deg(&mut self) {
-        self.deg_lb = self.deg_lb.add(self.start_deg.elapsed());
+    /// Exits a subroutine of the algorithm and add the time taken since the last time it was entered.
+    /// If the subroutine was already exited before, it does nothing.
+    ///
+    /// # Panics
+    /// Panics if the subroutine was not entered before.
+    pub fn exit_subroutine(&mut self, name: &str) {
+        if self.details.contains_key(name) {
+            let (start, duration) = self.details.get(name).unwrap();
+            if !start.is_none() {
+                // If the subroutine is not exited, we exit it
+                let elapsed = start.unwrap().elapsed();
+                self.details.insert(name.to_string(), (None, *duration + elapsed));
+            }
+        } else {
+            panic!("The subroutine {} was not started", name);
+        }
     }
 
-    pub fn enter_clq(&mut self) {
-        self.start_clq = std::time::Instant::now();
-    }
-
-    pub fn exit_clq(&mut self) {
-        self.clq_lb = self.clq_lb.add(self.start_clq.elapsed());
-    }
-
-    pub fn enter_max_deg(&mut self) {
-        self.start_max_deg = std::time::Instant::now();
-    }
-
-    pub fn exit_max_deg(&mut self) {
-        self.max_deg = self.max_deg.add(self.start_max_deg.elapsed());
-    }
-
-    pub fn enter_copy(&mut self) {
-        self.enter_copy = std::time::Instant::now();
-    }
-
-    pub fn exit_copy(&mut self) {
-        self.copy = self.copy.add(self.enter_copy.elapsed());
-    }
-
-    pub fn enter_clq_compl(&mut self) {
-        self.enter_clq_compl = std::time::Instant::now();
-    }
-
-    pub fn exit_clq_compl(&mut self) {
-        self.clq_compl = self.clq_compl.add(self.enter_clq_compl.elapsed());
-    }
-
-    pub fn enter_color_set(&mut self) {
-        self.enter_color_set = std::time::Instant::now();
-    }
-
-    pub fn exit_color_set(&mut self) {
-        self.color_set = self.color_set.add(self.enter_color_set.elapsed());
+    /// Returns the time taken by a subroutine of the algorithm.
+    /// The time taken is the sum of all the time taken by this subroutine since the first time it was entered.
+    ///
+    /// # Panics
+    /// Panics if the subroutine was not entered before.
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::time::Duration;
+    /// use vertex::{Clock, ElapseTime};
+    ///
+    /// let mut clock = Clock::new(3600);
+    ///
+    /// clock.enter_subroutine("subroutine1");
+    /// // Do something
+    /// clock.exit_subroutine("subroutine1");
+    ///
+    /// let elapsed = clock.get_subroutine_duration("subroutine1");
+    /// println!("Time taken by subroutine1 : {}", ElapseTime::new(*elapsed));
+    /// println!("Percentage of time taken by subroutine1 : {}%", elapsed.as_secs_f64() * 100.0 / clock.get_time().duration.as_secs_f64());
+    /// ```
+    pub fn get_subroutine_duration(&self, name: &str) -> &Duration {
+        if self.details.contains_key(name) {
+            let (_, duration) = self.details.get(name).unwrap();
+            duration
+        } else {
+            panic!("The subroutine {} was not started", name);
+        }
     }
 }
 #[cfg(test)]

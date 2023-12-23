@@ -17,18 +17,18 @@ pub fn b_and_b(graph: &UnGraphMap<u64, ()>,
         return (upper_bound, upper_bound_vc.clone());
     }
 
-    clock.enter_copy();
+    clock.enter_subroutine("copy");
     let mut subgraph = copy_graph(g);
-    clock.exit_copy();
+    clock.exit_subroutine("copy");
 
     if subgraph.edge_count() == 0 {
         // If the subgraph is empty, all edges are covered => vertex cover
         return (vertex_cover.len() as u64, vertex_cover);
     }
 
-    clock.enter_max_deg();
+    clock.enter_subroutine("max_deg");
     let (v, _max_deg) = get_vertex_with_max_degree(&subgraph, None);
-    clock.exit_max_deg();
+    clock.exit_subroutine("max_deg");
 
 
     if vertex_cover.len() as u64 + compute_lb(copy_graph(&subgraph), clock)  >= upper_bound {
@@ -102,13 +102,13 @@ fn compute_lb(graph: UnGraphMap<u64, ()>, clock: &mut Clock) -> u64 {
     let handle_clq = std::thread::spawn(move || {
         clq_lb(&shared_clq)
     });
-    clock.enter_deg();
+    clock.enter_subroutine("deg_lb");
     let deg_lb = handle_deg.join().unwrap();
-    clock.exit_deg();
+    clock.exit_subroutine("deg_lb");
 
-    clock.enter_clq();
+    clock.enter_subroutine("clq_lb");
     let clq_lb = handle_clq.join().unwrap();
-    clock.exit_clq();
+    clock.exit_subroutine("clq_lb");
     max(deg_lb, clq_lb)
 }
 
@@ -170,6 +170,7 @@ fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
 // This algorithm returns a vector containing the number of vertex in each color.
 //
 // This is a LDO algorithm (Largest Degree Order) : the vertices are ordered by decreasing degree.
+#[allow(dead_code)]
 fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
     // 1. Create a color set. The vertex degree of each vertex is calculated and the vertex degrees are added to
     let mut color_set = Vec::new(); // color_set[i] = j means that color i has j vertexes
@@ -218,6 +219,7 @@ fn greedy_coloring(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
     color_set
 }
 
+#[allow(dead_code)]
 fn welch_powell(graph: &UnGraphMap<u64, ()>) -> Vec<usize> {
     // sort vertices by decreasing degree
     let sorted_vertices = {

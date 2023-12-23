@@ -119,6 +119,24 @@ brock200_2.clq:
   is_time_limit: false
   algorithm: clique
   comment: Multithreaded lower bound
+- date: 2023-12-23 17:44:07
+  mvc_val: 12
+  time: 0min 3s 452ms 710µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Multithreaded lower bound
+- date: 2023-12-23 17:45:34
+  mvc_val: 12
+  time: 0min 3s 429ms 368µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Multithreaded lower bound
+- date: 2023-12-23 18:03:34
+  mvc_val: 12
+  time: 0min 3s 438ms 918µs
+  is_time_limit: false
+  algorithm: clique
+  comment: Multithreaded lower bound
 brock200_4.clq:
 - date: 2023-12-13 14:00:03
   mvc_val: 17

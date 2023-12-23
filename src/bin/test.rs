@@ -46,18 +46,14 @@ fn test_val(graph_id: &str, graph: &MVCGraph) -> () {
 fn output_reaction(res: MVCResult, clock: &Clock) {
     println!("================ Result ===================\n{}", res);
     println!("======== Details about performance ========");
-    println!("Time spent in deg : {}%", round(clock.deg_lb.as_secs_f64() * 100.0
+    println!("Time spent in deg : {}%", round(clock.get_subroutine_duration("deg_lb").as_secs_f64() * 100.0
                                                   / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in clq : {}%", round(clock.clq_lb.as_secs_f64() * 100.0
+    println!("Time spent in clq : {}%", round(clock.get_subroutine_duration("clq_lb").as_secs_f64() * 100.0
                                                   / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in max deg : {}%", round(clock.max_deg.as_secs_f64() * 100.0
+    println!("Time spent in max deg : {}%", round(clock.get_subroutine_duration("max_deg").as_secs_f64() * 100.0
                                                       / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in copy : {}%", round(clock.copy.as_secs_f64() * 100.0
+    println!("Time spent in copy : {}%", round(clock.get_subroutine_duration("copy").as_secs_f64() * 100.0
                                                    / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in clq complement : {}%", round(clock.clq_compl.as_secs_f64() * 100.0
-                                                             / clock.get_time().duration.as_secs_f64(), 4));
-    println!("Time spent in color set : {}%", round(clock.color_set.as_secs_f64() * 100.0
-                                                        / clock.get_time().duration.as_secs_f64(), 4));
 
     let comment = "Custom graph (without multithreading)";
     add_time_to_yaml(&res.graph_id,
@@ -90,26 +86,26 @@ fn bnb_mvc(graph: &MVCGraph,
         return (upper_bound, upper_bound_vc.clone());
     }
 
-    clock.enter_copy();
+    clock.enter_subroutine("copy");
     let mut subgraph = g.clone();
-    clock.exit_copy();
+    clock.exit_subroutine("copy");
 
     if subgraph.size() == 0 {
         // If the subgraph is empty, all edges are covered => vertex cover
         return (vertex_cover.len() as u64, vertex_cover);
     }
 
-    clock.enter_max_deg();
+    clock.enter_subroutine("max_deg");
     let (v, _max_deg) = get_vertex_with_max_degree(&subgraph, None);
-    clock.exit_max_deg();
+    clock.exit_subroutine("max_deg");
 
-    clock.enter_deg();
+    clock.enter_subroutine("deg_lb");
     let deg_lb = deg_lb(&subgraph);
-    clock.exit_deg();
+    clock.exit_subroutine("deg_lb");
 
-    clock.enter_clq();
+    clock.enter_subroutine("clq_lb");
     let clq_lb = clq_lb(&subgraph);
-    clock.exit_clq();
+    clock.exit_subroutine("clq_lb");
 
     let lb = max(deg_lb, clq_lb);
 
