@@ -178,7 +178,6 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
 
     let mut g = UnGraphMap::<u64, ()>::new();
     let mut exp_edges = 0;
-    let mut edges = 0;
 
     for line in reader.lines() {
         let line = line?;
@@ -194,7 +193,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
                     return Err("Expecting edge/col format".into());
                 }
                 let order = values[2].parse::<u64>()?;
-                exp_edges = values[3].parse::<u64>()?;
+                exp_edges = values[3].parse::<usize>()?;
                 for i in 0..order {
                     g.add_node(i);
                 }
@@ -207,15 +206,14 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
                 let j = values[2].parse::<u64>()? - 1;
 
                 g.add_edge(i, j, ());
-                edges += 1;
             }
             _ => {
                 return Err(format!("Invalid file format for line {:?}", line).into());
             }
         }
     }
-    if edges != exp_edges {
-        return Err(format!("Expecting {} edges but read {} edges", exp_edges, edges).into());
+    if g.edge_count() != exp_edges {
+        return Err(format!("Expecting {} edges but read {} edges", exp_edges, g.edge_count()).into());
     }
     if g.node_count() == 0 {
         return Err("Expecting graph order".into());

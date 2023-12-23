@@ -203,3 +203,28 @@
   order: 1500
   size: 847244
   val: 0
+- id: oui.clq
+  format: clq
+  order: 7
+  size: 9
+  val: 0
+- id: test_cycle_5.clq
+  format: clq
+  order: 5
+  size: 5
+  val: 0
+- id: test_welsh.clq
+  format: clq
+  order: 11
+  size: 16
+  val: 0
+- id: DSJC500.5.clq
+  format: clq
+  order: 500
+  size: 62624
+  val: 0
+- id: DSJC1000.5.clq
+  format: clq
+  order: 1000
+  size: 249826
+  val: 0
