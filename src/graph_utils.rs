@@ -1,15 +1,16 @@
 //! Module containing functions to manipulate graphs used in the project.
 
-use std::error::Error;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
 
 use petgraph::prelude::UnGraphMap;
 use serde::{Deserialize, Serialize};
+use serde::de::Error;
 use serde_yaml::{Sequence, Value};
 
 use crate::ElapseTime;
+use crate::errors::{InvalidClqFileFormat, YamlError};
 
 /// Check if a given vertex cover is a vertex cover of a given graph.
 ///
@@ -36,7 +37,7 @@ use crate::ElapseTime;
 /// vertex_cover.push(1);
 /// assert!(is_vertex_cover(&graph, &vertex_cover));
 /// ```
-pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &Vec<u64>) -> bool {
+pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &[u64]) -> bool {
     for (i, j, _) in graph.all_edges() {
         if !vertex_cover.contains(&(i)) && !vertex_cover.contains(&(j)) {
             return false;
@@ -144,6 +145,9 @@ pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
 /// * e <vertex1> <vertex2> : an edge between vertex1 and vertex2
 /// * c <comment> : a comment
 ///
+/// # Throws
+/// InvalidClqFileFormat if the file is not in the correct format.
+///
 /// # Test file
 /// ```text
 /// c File: test.clq
@@ -169,10 +173,12 @@ pub fn complement(graph: &UnGraphMap<u64, ()>) -> UnGraphMap<u64, ()> {
 /// assert!(graph.contains_edge(4, 0));
 /// assert!(graph.contains_edge(4, 1));
 /// ```
-pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> {
+pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, InvalidClqFileFormat> {
     let file = match File::open(path) {
         Ok(file) => file,
-        Err(e) => return Err(format!("File {:?} not found \n {:?}", path, e).into()),
+        Err(e) => return Err(
+            InvalidClqFileFormat::new(&format!("File {:?} not found \n {:?}", path, e))
+        ),
     };
     let reader = BufReader::new(file);
 
@@ -189,8 +195,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
             }
             "p" => {
                 if values[1] != "edge" && values[1] != "col" {
-                    // Idk why col but ok
-                    return Err("Expecting edge/col format".into());
+                    return Err(InvalidClqFileFormat::new("Expecting edge/col format"))
                 }
                 let order = values[2].parse::<u64>()?;
                 exp_edges = values[3].parse::<usize>()?;
@@ -200,7 +205,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
             }
             "e" => {
                 if g.node_count() == 0 {
-                    return Err("Expecting graph order".into());
+                    return Err(InvalidClqFileFormat::new("Expecting graph order"));
                 }
                 let i = values[1].parse::<u64>()? - 1;
                 let j = values[2].parse::<u64>()? - 1;
@@ -208,15 +213,15 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, Box<dyn Error>> 
                 g.add_edge(i, j, ());
             }
             _ => {
-                return Err(format!("Invalid file format for line {:?}", line).into());
+                return Err(InvalidClqFileFormat::new(&format!("Invalid file format for line {:?}", line)));
             }
         }
     }
     if g.edge_count() != exp_edges {
-        return Err(format!("Expecting {} edges but read {} edges", exp_edges, g.edge_count()).into());
+        return Err(InvalidClqFileFormat::new(&format!("Expecting {} edges but read {} edges", exp_edges, g.edge_count())));
     }
     if g.node_count() == 0 {
-        return Err("Expecting graph order".into());
+        return Err(InvalidClqFileFormat::new("Expecting graph order"));
     }
     Ok(g)
 }
@@ -341,16 +346,21 @@ pub struct YamlTime {
 /// The default value for mvc_val is 0, it has to be updated manually.
 /// If the graph id is already in the file, it is not added again.
 ///
-/// # Panics
-/// Panics if the file cannot be opened or the graph cannot be written to the file.
-pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, path: &str) {
-    let file = File::open(path)
-        .expect(format!("Unable to open file {:?}", path).as_str());
-    let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
+/// # Throws
+/// - YamlError::IoError if the file cannot be opened or written
+/// - YamlError::YAMLFormatError if the file is not in the correct format
+/// - YamlError::YamlParsingError if there is an error while parsing the file
+pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, path: &str)
+                         -> Result<(), YamlError> {
+    let file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => return Err(YamlError::IoError(format!("unable to open file {:?}", path), e))
+    };
+    let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file)?;
 
     if data.iter().any(|x| x.id == id) {
         // If the graph is already in the file, we don't add it again
-        return;
+        return Ok(());
     }
 
     let info = GraphInfo {
@@ -363,30 +373,37 @@ pub fn add_graph_to_yaml(id: &str, format: &str, graph: &UnGraphMap<u64, ()>, pa
     data.push(info);
 
     // Update the file
-    let mut file = File::create(path)
-        .expect(format!("Unable to create file {:?}", path).as_str());
-    file.write_all(serde_yaml::to_string(&data).unwrap().as_bytes())
-        .expect(format!("Unable to write file to {:?}", path).as_str());
+    let mut file = File::create(path)?;
+    let tmp = serde_yaml::to_string(&data)?;
+    file.write_all(tmp.as_bytes())?;
 
     // When we add a graph to the yaml file, we also add it to the time file
-    add_graph_to_time_file(id);
+    add_graph_to_time_file(id)
 }
 
-fn add_graph_to_time_file(id: &str) {
+fn add_graph_to_time_file(id: &str) -> Result<(), YamlError> {
     let time_path = "src/resources/time_result.yml";
-    let mut file = File::open(time_path).expect("Could not open time file");
+    let mut file = match File::open(time_path) {
+        Ok(file) => file,
+        Err(e) => return Err(YamlError::IoError(format!("unable to open file {:?}", time_path), e))
+    };
     let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Could not read time file");
+    file.read_to_string(&mut contents)?;
 
-    let time: Value = serde_yaml::from_str(&contents).expect("Could not parse time file");
-    let mut map = time.as_mapping().expect("Could not parse time file").clone();
+    let time: Value = serde_yaml::from_str(&contents)?;
+    let mut map = match time.as_mapping() {
+        Some(x) => x.clone(),
+        None => return Err(YamlError::YAMLFormatError("File badly formatted".to_string(),
+                                                      serde_yaml::Error::custom("The content of the file should be a map"))),
+    };
 
     let vec: Sequence = Vec::new();
 
     map.insert(Value::String(id.to_string()), Value::Sequence(vec));
 
-    let mut file = File::create(time_path).expect("Could not open time file");
-    serde_yaml::to_writer(&mut file, &map).expect("Could not write time file");
+    let mut file = File::create(time_path)?;
+    serde_yaml::to_writer(&mut file, &map)?;
+    Ok(())
 }
 
 /// Update the known value of the minimum vertex cover for a given graph id.
@@ -396,29 +413,33 @@ fn add_graph_to_time_file(id: &str) {
 /// - mvc_val : the new value of the minimum vertex cover
 /// - path : the path to the yaml file containing the graph info (optional-> None or Some(path))
 ///
-/// # Panics
-/// Panics if :
-/// - The file cannot be opened
-/// - The graph id is not in the file
-/// - The graph id cannot be updated (error while writing to the file)
+/// # Throws
+/// - YamlError::IoError if the file cannot be opened or written
+/// - YamlError::YAMLParsingError if there is an error while parsing the file
+/// - YamlError::NotFound if the graph id is not in the file
 ///
 /// # example
 /// ```
+/// use vertex::errors::YamlError;
 /// use vertex::graph_utils::update_mvc_value;
 ///
-/// update_mvc_value("test.clq", 2, Some("src/resources/graph_data.yml"));
-/// // The value of the minimum vertex cover for the test.clq graph is now 2
+/// let res = match update_mvc_value("test.clq", 2, Some("src/resources/graph_data.yml")) {
+///     Ok(_) => {println!("The value of the minimum vertex cover for the test.clq graph is now 2");},
+///     Err(e) => {println!("Error: {:?}", e);},
+/// };
 ///
-/// update_mvc_value("test.clq", 3, None);
+/// update_mvc_value("test.clq", 3, None).expect("Error while updating the value of the minimum vertex cover");
 /// // The value of the minimum vertex cover for the test.clq graph is now 3
 /// ```
-pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
+pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) -> Result<(), YamlError> {
     // TODO : this function has to be deleted later on
-    let path = path.unwrap_or_else(|| "src/resources/graph_data.yml");
-    let file = File::open(path)
-        .expect(format!("Unable to open file {:?}", path).as_str());
+    let path = path.unwrap_or("src/resources/graph_data.yml");
+    let file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => return Err(YamlError::IoError(format!("unable to open file {:?}", path), e))
+    };
 
-    let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
+    let mut data: Vec<GraphInfo> = serde_yaml::from_reader(file)?;
 
     let mut found = false;
     for info in data.iter_mut() {
@@ -429,17 +450,20 @@ pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
         }
     }
     if !found {
-        panic!("Graph {:?} not found in {:?} to store the mvc : {:?}", id, path, mvc_val);
+        return Err(YamlError::NotFound(
+            format!("Graph {:?} not found in the YAML file", id),
+            format!("Graph {:?} not found in {:?} to store the mvc : {:?}", id, path, mvc_val)));
     }
 
     // Update the file
-    let mut file = File::create(path)
-        .expect(format!("Unable to create file {:?}", path).as_str());
-    file.write_all(serde_yaml::to_string(&data).unwrap().as_bytes())
-        .expect(format!("Unable to write file to {:?}", path).as_str());
+    let mut file = File::create(path)?;
+    let tmp = serde_yaml::to_string(&data)?;
+    file.write_all(tmp.as_bytes())?;
+    Ok(())
 }
 
-/// Check if a given value is the optimal value for a given graph id.
+/// Check if a given value is the optimal value for a given graph id. If the graph id is not in the file, return None.
+///
 /// The optimal value is the value stored in the yaml file. So, if the value in the yaml file is wrong, this function will return the wrong result.
 ///
 /// # Parameters
@@ -447,34 +471,43 @@ pub fn update_mvc_value(id: &str, mvc_val: u64, path: Option<&str>) {
 /// - val : the value to check
 /// - path : the path to the yaml file containing the graph info (optional-> None or Some(path))
 ///
-/// # Panics
-/// Panics if :
-/// - The file cannot be opened
+/// # Throws
+/// - YamlError::IoError if the file cannot be opened or is not found
+/// - YamlError::YAMLParsingError if there is an error while parsing the file
 ///
 /// # example
 /// ```
 /// use vertex::graph_utils::is_optimal_value;
 ///
-/// assert!(is_optimal_value("test.clq", 3, None).unwrap());
-/// assert!(!is_optimal_value("test.clq", 2, None).unwrap());
+/// let true_res = is_optimal_value("test.clq", 3, Some("src/resources/graph_data.yml")).unwrap_or_else(|e| {
+///    panic!("Error while checking if value is optimal : {}", e);
+/// });
+/// assert!(true_res.unwrap());
+///
+/// let false_res = is_optimal_value("test.clq", 2, Some("src/resources/graph_data.yml")).unwrap_or_else(|e| {
+/// panic!("Error while checking if value is optimal : {}", e);
+/// });
+/// assert!(!false_res.unwrap());
 /// ```
-pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Option<bool> {
-    let path = path.unwrap_or_else(|| "src/resources/graph_data.yml");
-    let file = File::open(path)
-        .expect(format!("Unable to open file {:?}", path).as_str());
+pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Result<Option<bool>, YamlError> {
+    let path = path.unwrap_or("src/resources/graph_data.yml");
+    let file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => return Err(YamlError::IoError(format!("unable to open file {:?}", path), e))
+    };
 
-    let data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
+    let data: Vec<GraphInfo> = serde_yaml::from_reader(file)?;
 
     for info in data.iter() {
         if info.id == id {
             return if info.val == val {
-                Some(true)
+                Ok(Some(true))
             } else {
-                Some(false)
+                Ok(Some(false))
             };
         }
     }
-    return None;
+    Ok(None)
 }
 
 /// Get the optimal value for a given graph id.
@@ -485,52 +518,83 @@ pub fn is_optimal_value(id: &str, val: u64, path: Option<&str>) -> Option<bool> 
 /// - id : the id of the graph (ex: test.clq)
 /// - path : the path to the yaml file containing the graph info (optional-> None or Some(path))
 ///
-/// # Panics
-/// Panics if the file cannot be opened
+/// # Throws
+/// - YamlError::IoError if the file cannot be opened or is not found
+/// - YamlError::YAMLParsingError if there is an error while parsing the file
 ///
 /// # example
 /// ```
 /// use vertex::graph_utils::get_optimal_value;
 ///
-/// assert_eq!(get_optimal_value("test.clq", None), Some(3));
-/// assert_eq!(get_optimal_value("unknown_graph.clq", None), None);
+/// let res = get_optimal_value("test.clq", Some("src/resources/graph_data.yml")).unwrap_or_else(|e| {
+///   panic!("Error while getting the optimal value : {}", e);
+/// });
+/// assert_eq!(res, Some(3));
+///
+/// let none_res = get_optimal_value("unknown_graph.clq", Some("src/resources/graph_data.yml")).unwrap_or_else(|e| {
+///  panic!("Error while getting the optimal value : {}", e);
+/// });
+/// assert_eq!(none_res, None);
+///
 /// ```
-pub fn get_optimal_value(id: &str, path: Option<&str>) -> Option<u64> {
-    let path = path.unwrap_or_else(|| "src/resources/graph_data.yml");
-    let file = File::open(path)
-        .expect(format!("Unable to open file {:?}", path).as_str());
+pub fn get_optimal_value(id: &str, path: Option<&str>) -> Result<Option<u64>, YamlError> {
+    let path = path.unwrap_or("src/resources/graph_data.yml");
+    let file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => return Err(YamlError::IoError(format!("unable to open file {:?}", path), e))
+    };
 
-    let data: Vec<GraphInfo> = serde_yaml::from_reader(file).unwrap();
+    let data: Vec<GraphInfo> = serde_yaml::from_reader(file)?;
 
     for info in data.iter() {
         if info.id == id {
-            return Some(info.val);
+            return Ok(Some(info.val));
         }
     }
-    return None;
+    Ok(None)
 }
 
 /// Adds a new time for the given graph to the yaml file located at src/resources/time_result.yml.
-pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, is_time_limit: bool, algorithm: &str, comment: &str) {
+///
+/// # Parameters
+/// - id : the id of the graph (ex: test.clq)
+/// - mvc_val : the value of the minimum vertex cover
+/// - time : the time taken to compute the mvc
+/// - is_time_limit : true if the time limit was reached, false otherwise
+/// - algorithm : the algorithm used to compute the mvc
+/// - comment : a comment about the computation
+///
+/// # Throws
+/// - YamlError::IoError if the file cannot be opened, is not found or cannot be written
+/// - YamlError::YAMLParsingError if there is an error while parsing the file
+/// - YamlError::NotFound if the graph id is not in the file
+/// - YamlError::YAMLFormatError if the file is not in the correct format (should be a map / content of a graph should be a vector)
+///
+pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, is_time_limit: bool, algorithm: &str, comment: &str)
+                        -> Result<(), YamlError> {
     let path = "src/resources/time_result.yml";
-    let mut file = File::open(path)
-        .expect(format!("Unable to open file {:?}", path).as_str());
+    let mut file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => return Err(YamlError::IoError(format!("unable to open file {:?}", path), e))
+    };
     let mut content = String::new();
-    file.read_to_string(&mut content).expect("Could not read time file");
+    file.read_to_string(&mut content)?;
 
-    let content: Value = serde_yaml::from_str(&content).expect("Could not parse time file");
-    let mut map = content.as_mapping().expect("Could not parse time file").clone();
-
-    if !map.contains_key(id) {
-        panic!("Graph {:?} not found in {:?} to store the time", id, path);
-    }
+    let content: Value = serde_yaml::from_str(&content)?;
+    let mut map = match content.as_mapping() {
+        Some(x) => x.clone(),
+        None => return Err(YamlError::YAMLFormatError("File badly formatted".to_string(),
+                                                      serde_yaml::Error::custom("The content of the file should be a map"))),
+    };
 
     let graph = match map.get(id) {
         Some(graph) => graph.clone(),
-        None => panic!("Graph {:?} not found in {:?} to store the time", id, path),
+        None => return Err(YamlError::NotFound(
+            format!("Graph {:?} not found in the YAML file", id),
+            format!("Graph {:?} not found in {:?} to store the mvc : {:?}", id, path, mvc_val))),
     };
 
-    let mut graph_data: Sequence = serde_yaml::from_value(graph).expect("File badly formatted, the content of the graph should be a vector");
+    let mut graph_data = get_graph_data(graph)?;
 
     let new_time = YamlTime {
         date: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
@@ -541,50 +605,79 @@ pub fn add_time_to_yaml(id: &str, mvc_val: u64, time: ElapseTime, is_time_limit:
         comment: comment.to_string(),
     };
 
-    let as_value = serde_yaml::to_value(new_time).unwrap();
+    let as_value = serde_yaml::to_value(new_time)?;
     graph_data.push(as_value);
 
     map.insert(Value::String(id.to_string()), Value::Sequence(graph_data));
 
 
     // Update the file
-    let mut file = File::create(path)
-        .expect(format!("Unable to create file {:?}", path).as_str());
-    serde_yaml::to_writer(&mut file, &map).expect("Could not write time file");
+    let mut file = File::create(path)?;
+    serde_yaml::to_writer(&mut file, &map)?;
+    Ok(())
 }
 
 /// Get all the times for a given graph id.
-pub fn get_time_data(id: &str) -> Vec<YamlTime> {
+///
+/// # Parameters
+/// - id : the id of the graph (ex: test.clq)
+///
+/// # Throws
+/// - YamlError::IoError if the file cannot be opened or is not found
+/// - YamlError::YAMLParsingError if there is an error while parsing the file
+/// - YamlError::NotFound if the graph id is not in the file
+/// - YamlError::YAMLFormatError if the file is not in the correct format.
+///
+pub fn get_time_data(id: &str) -> Result<Vec<YamlTime>, YamlError> {
     let path = "src/resources/time_result.yml";
-    let mut file = File::open(path)
-        .expect(format!("Unable to open file {:?}", path).as_str());
+    let mut file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => return Err(YamlError::IoError(format!("unable to open file {:?}", path), e))
+    };
     let mut content = String::new();
-    file.read_to_string(&mut content).expect("Could not read time file");
+    file.read_to_string(&mut content)?;
 
-    let content: Value = serde_yaml::from_str(&content).expect("Could not parse time file");
-    let map = content.as_mapping().expect("Could not parse time file").clone();
-
-    if !map.contains_key(id) {
-        panic!("Graph {:?} not found in {:?} to store the time", id, path);
-    }
+    let content: Value = serde_yaml::from_str(&content)?;
+    let map = match content.as_mapping() {
+        Some(x) => x.clone(),
+        None => return Err(YamlError::YAMLFormatError("File badly formatted".to_string(),
+                                                      serde_yaml::Error::custom("The content of the file should be a map"))),
+    };
 
     let graph = match map.get(id) {
         Some(graph) => graph.clone(),
-        None => panic!("Graph {:?} not found in {:?} to store the time", id, path),
+        None => return Err(YamlError::NotFound(
+            format!("Graph {:?} not found in the YAML file", id),
+            format!("Graph {:?} not found in {:?} to store the time", id, path))),
     };
 
-    let graph_data: Sequence = serde_yaml::from_value(graph).expect("File badly formatted, the content of the graph should be a vector");
+    let graph_data = get_graph_data(graph)?;
     let mut res: Vec<YamlTime> = Vec::new();
 
     for time in graph_data.iter() {
-        let time: YamlTime = serde_yaml::from_value(time.clone()).expect("File badly formatted, the content of the vector should be a YamlTime");
+        let time: YamlTime = match serde_yaml::from_value(time.clone()) {
+            Ok(x) => x,
+            Err(e) => return Err(YamlError::YAMLFormatError(
+                "File badly formatted".to_string(), serde_yaml::Error::custom(format!("the content of the graph should be a vector: {:?}", e))))
+        };
         res.push(time);
     }
-    return res;
+    Ok(res)
+}
+
+fn get_graph_data(id: Value) -> Result<Sequence, YamlError> {
+    let res = match serde_yaml::from_value(id) {
+        Ok(x) => x,
+        Err(e) => return Err(YamlError::YAMLFormatError(
+            "File badly formatted".to_string(), serde_yaml::Error::custom(format!("the content of the graph should be a vector: {:?}", e))))
+    };
+    Ok(res)
 }
 
 #[cfg(test)]
 mod graph_utils_tests {
+    use std::time::Duration;
+
     use super::*;
 
     #[test]
@@ -728,6 +821,53 @@ mod graph_utils_tests {
     }
 
     #[test]
+    fn test_load_clq_should_throw_when_file_not_found() {
+        let filename = "unknown_file.clq";
+        let result = load_clq_file(filename);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_load_clq_should_throw_when_file_not_in_correct_format() {
+        // The file is not in the correct format
+        let filename = "src/resources/tests/graphs/format_edge.clq";
+        let result = load_clq_file(filename);
+        assert!(result.is_err());
+        let expected = "Expecting edge/col format";
+        assert_eq!(result.unwrap_err().message, expected);
+    }
+
+    #[test]
+    fn test_load_clq_throw_when_order_missing() {
+        // Defined an edge before the graph order
+        let filename = "src/resources/tests/graphs/format_order.clq";
+        let result = load_clq_file(filename);
+        assert!(result.is_err());
+        let expected = "Expecting graph order";
+        assert_eq!(result.unwrap_err().message, expected);
+    }
+
+    #[test]
+    fn test_load_clq_throw_when_wrong_size() {
+        // The file has a wrong number of edges
+        let filename = "src/resources/tests/graphs/format_size.clq";
+        let result = load_clq_file(filename);
+        assert!(result.is_err());
+        let expected = "Expecting 1 edges but read 2 edges";
+        assert_eq!(result.unwrap_err().message, expected);
+    }
+
+    #[test]
+    fn test_load_clq_throw_when_wrong_symbol() {
+        // The file has a wrong symbol
+        let filename = "src/resources/tests/graphs/format_symbol.clq";
+        let result = load_clq_file(filename);
+        assert!(result.is_err());
+        let expected = "Invalid file format for line \"a 1 2\"";
+        assert_eq!(result.unwrap_err().message, expected);
+    }
+
+    #[test]
     fn test_graph_to_string() {
         let mut graph = Box::new(UnGraphMap::<u64, ()>::new());
         for i in 0..4 {
@@ -738,5 +878,85 @@ mod graph_utils_tests {
 
         let string = graph_to_string(&graph);
         assert_eq!(string, "p edge 4 2\ne 1 2\ne 2 3\n");
+    }
+
+    // ========== ADD GRAPH TO YAML ==========
+    #[test]
+    fn test_add_graph_to_yaml_file_not_found() {
+        let result = add_graph_to_yaml("test.clq",
+                                       "edge",
+                                       &UnGraphMap::<u64, ()>::new(),
+                                       "unknown_file.yml");
+        assert!(result.is_err());
+        // Check error types is IoError
+        assert!(matches!(result.unwrap_err(), YamlError::IoError(_, _)));
+    }
+
+    // ======= UPDATE MVC VALUE =========
+    #[test]
+    fn test_update_mvc_value_file_not_found() {
+        let result = update_mvc_value("test.clq", 2, Some("unknown_file.yml"));
+        assert!(result.is_err());
+        // Check error types is IoError
+        assert!(matches!(result.unwrap_err(), YamlError::IoError(_, _)));
+    }
+
+    #[test]
+    fn test_update_mvc_value_graph_not_found() {
+        let result = update_mvc_value("unknown_graph.clq", 2, None);
+        assert!(result.is_err());
+        // Check error types is NotFound
+        assert!(matches!(result.unwrap_err(), YamlError::NotFound(_, _)));
+    }
+
+    // ======= IS OPTIMAL VALUE =========
+    #[test]
+    fn test_is_optimal_value_file_not_found() {
+        let result = is_optimal_value("test.clq", 3, Some("unknown_file.yml"));
+        assert!(result.is_err());
+        // Check error types is IoError
+        assert!(matches!(result.unwrap_err(), YamlError::IoError(_, _)));
+    }
+
+    #[test]
+    fn test_is_optimal_value() {
+        let result = is_optimal_value("test.clq", 3, Some("src/resources/graph_data.yml"));
+        assert!(result.is_ok());
+        assert!(result.unwrap().unwrap());
+    }
+
+    // ======= GET OPTIMAL VALUE =========
+    #[test]
+    fn test_get_optimal_value_file_not_found() {
+        let result = get_optimal_value("test.clq", Some("unknown_file.yml"));
+        assert!(result.is_err());
+        // Check error types is IoError
+        assert!(matches!(result.unwrap_err(), YamlError::IoError(_, _)));
+    }
+
+    #[test]
+    fn test_get_optimal_value() {
+        let result = get_optimal_value("test.clq", Some("src/resources/graph_data.yml"));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().unwrap(), 3);
+    }
+
+
+    // ======= ADD TIME TO YAML =========
+    #[test]
+    fn test_add_time_to_yaml_graph_not_found() {
+        let result = add_time_to_yaml("unknown_graph.clq", 2, ElapseTime::new(Duration::new(0, 0)), false, "algo", "comment");
+        assert!(result.is_err());
+        // Check error types is NotFound
+        assert!(matches!(result.unwrap_err(), YamlError::NotFound(_, _)));
+    }
+
+    // ======= GET TIME DATA =========
+    #[test]
+    fn test_get_time_data_graph_not_found() {
+        let result = get_time_data("unknown_graph.clq");
+        assert!(result.is_err());
+        // Check error types is NotFound
+        assert!(matches!(result.unwrap_err(), YamlError::NotFound(_, _)));
     }
 }

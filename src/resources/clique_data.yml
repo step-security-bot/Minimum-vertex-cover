@@ -8,7 +8,7 @@
   order: 23
   size: 71
   val: 2
-- id: petersen.clq
+- id: HoG_660.clq
   format: col
   order: 10
   size: 15
@@ -228,3 +228,43 @@
   order: 1000
   size: 249826
   val: 0
+- id: HoG_28.clq
+  format: clq
+  order: 4
+  size: 5
+  val: 3
+- id: HoG_226.clq
+  format: clq
+  order: 6
+  size: 12
+  val: 3
+- id: HoG_1190.clq
+  format: clq
+  order: 30
+  size: 60
+  val: 3
+- id: HoG_176.clq
+  format: clq
+  order: 8
+  size: 24
+  val: 4
+- id: HoG_92.clq
+  format: clq
+  order: 10
+  size: 30
+  val: 5
+- id: HoG_1171.clq
+  format: clq
+  order: 50
+  size: 1050
+  val: 15
+- id: HoG_1073.clq
+  format: clq
+  order: 15
+  size: 15
+  val: 3
+- id: HoG_1116.clq
+  format: clq
+  order: 18
+  size: 45
+  val: 3

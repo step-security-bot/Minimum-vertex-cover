@@ -1,0 +1,3 @@
+c File to test if the function load_clq_file() throws the correct error
+c if we define an edge before the order and size of the graph
+e 1 2

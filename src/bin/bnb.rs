@@ -10,8 +10,10 @@ fn main() {
             .expect("Error while loading graph");
 
         if args.len() == 3 && args[2] == "-c" {
-            let res = run_algorithm(&args[1], &graph, &branch_and_bound, true);
-            println!("Result : {}", res);
+            match run_algorithm(&args[1], &graph, &branch_and_bound, true) {
+                Ok(res) => println!("Result : {}", res),
+                Err(e) => println!("Error : {}", e),
+            }
             return;
         }
         if args.len() == 3 {
@@ -19,8 +21,10 @@ fn main() {
             return;
         }
 
-        let res = run_algorithm(&args[1], &graph, &branch_and_bound, false);
-        println!("Result : {}", res);
+        match run_algorithm(&args[1], &graph, &branch_and_bound, false) {
+            Ok(res) => println!("Result : {}", res),
+            Err(e) => println!("Error : {}", e),
+        };
     } else {
         println!("Usage: cargo run [-r] --bin bnb <graph_name>");
     }

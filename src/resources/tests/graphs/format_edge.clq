@@ -1,0 +1,4 @@
+c File to test if the function load_clq_file() throws the correct error
+c if the format type is not edge nor col.
+p bad 2 1
+e 1 2

@@ -1,0 +1,12 @@
+c Diamond graph
+c Source : https://houseofgraphs.org/graphs/28
+c HoG ID : 28
+c Number of vertices : 4
+c Number of edges : 5
+c Maximum clique : 3
+p edge 4 5
+e 1 3
+e 1 4
+e 2 3
+e 2 4
+e 3 4

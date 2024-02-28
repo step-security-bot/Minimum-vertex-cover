@@ -24,10 +24,14 @@ pub fn update_graph_info() {
                 }
             };
             println!("{}: {} vertices, {} edges", path_str, graph.node_count(), graph.edge_count());
-            add_graph_to_yaml(path_str.split("/").last().unwrap(),
+            let result = add_graph_to_yaml(path_str.split("/").last().unwrap(),
                               "clq",
                               &graph,
                               "src/resources/graph_data.yml");
+            match result {
+                Ok(_) => println!("Graph added to graph_data.yml"),
+                Err(e) => println!("Error while adding graph to graph_data.yml : {}", e)
+            }
         }
     }
 }

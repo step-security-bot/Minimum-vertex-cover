@@ -19,7 +19,7 @@ pub fn b_and_b(graph: &UnGraphMap<u64, ()>,
 
     clock.enter_subroutine("copy");
     let mut subgraph = copy_graph(g);
-    clock.exit_subroutine("copy");
+    clock.exit_subroutine("copy").expect("Error while exiting subroutine");
 
     if subgraph.edge_count() == 0 {
         // If the subgraph is empty, all edges are covered => vertex cover
@@ -28,7 +28,7 @@ pub fn b_and_b(graph: &UnGraphMap<u64, ()>,
 
     clock.enter_subroutine("max_deg");
     let (v, _max_deg) = get_vertex_with_max_degree(&subgraph, None);
-    clock.exit_subroutine("max_deg");
+    clock.exit_subroutine("max_deg").expect("Error while exiting subroutine");
 
 
     if vertex_cover.len() as u64 + compute_lb(copy_graph(&subgraph), clock)  >= upper_bound {
@@ -104,11 +104,11 @@ fn compute_lb(graph: UnGraphMap<u64, ()>, clock: &mut Clock) -> u64 {
     });
     clock.enter_subroutine("deg_lb");
     let deg_lb = handle_deg.join().unwrap();
-    clock.exit_subroutine("deg_lb");
+    clock.exit_subroutine("deg_lb").expect("Error while exiting subroutine");
 
     clock.enter_subroutine("clq_lb");
     let clq_lb = handle_clq.join().unwrap();
-    clock.exit_subroutine("clq_lb");
+    clock.exit_subroutine("clq_lb").expect("Error while exiting subroutine");
     max(deg_lb, clq_lb)
 }
 
@@ -151,7 +151,7 @@ fn sat_lb(_graph: &UnGraphMap<u64, ()>) -> u64 {
 fn clq_lb(graph: &UnGraphMap<u64, ()>) -> u64 {
     // 1) Get the complement of the graph
     // 2) Find a greedy coloring of the complement
-    // 3) Each color is a independent set
+    // 3) Each color is an independent set
     // 4) An independent set in the complement is a clique in the original graph
     // 5) Adds the numbers of nodes in each clique minus 1 (a clique is a complete graph)
 

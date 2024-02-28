@@ -1,0 +1,4 @@
+c File to test if the function load_clq_file() throws the correct error
+c it detects a bad first symbol
+p edge 1 2
+a 1 2

@@ -1,7 +1,7 @@
 use std::env;
 
 use vertex;
-use vertex::graph_utils::load_clq_file;
+use vertex::graph_utils::{add_time_to_yaml, is_optimal_value, load_clq_file};
 use vertex::naive_search;
 
 fn main() {
@@ -10,10 +10,25 @@ fn main() {
         let graph = load_clq_file(&format!("src/resources/graphs/{}", args[1]))
             .expect("Error while loading graph");
 
+
         // Run algorithm without updating value
         println!("/!\\ This algorithm compute the MVC value on the complement graph by default /!\\");
-        let res = vertex::run_algorithm(&args[1], &graph, &naive_search, true);
+        let mut res = vertex::run_algorithm(&args[1], &graph, &naive_search, true)
+            .unwrap_or_else(|e| {
+                panic!("Error while running algorithm : {}", e);
+            });
+        res.value = graph.node_count() as u64 - res.value;
+        res.is_optimal = is_optimal_value(&res.graph_id, res.value, Some("src/resources/clique_data.yml")).unwrap_or_else(|e| {
+            panic!("Error while checking if value is optimal : {}", e);
+        });
+
         println!("Result : {}", res);
+        add_time_to_yaml(&res.graph_id,
+                         res.value,
+                         res.time,
+                         res.is_time_limit,
+                         "naive_search",
+                         "").expect("Error while adding time to yaml file");
     } else {
         println!("Usage: cargo run [-r] --bin naive_search <graph_name>");
     }

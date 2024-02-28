@@ -3,17 +3,19 @@ use std::fmt::Display;
 use std::ops::Add;
 use std::time::Duration;
 
+use itertools::Itertools;
 use petgraph::prelude::UnGraphMap;
 use serde::{Deserialize, Serialize};
 
 use crate::branch_and_bound::b_and_b;
+use crate::errors::{ClockError, YamlError};
 use crate::graph_utils::{copy_graph, get_optimal_value, is_optimal_value, is_vertex_cover};
 
 pub mod graph_utils;
 pub mod format;
 mod branch_and_bound;
-
 pub mod mvcgraph;
+pub mod errors;
 
 /// Naïve algorithm that searches for the minimum vertex cover of a given graph.
 ///
@@ -40,33 +42,28 @@ pub mod mvcgraph;
 /// assert_eq!(naive_search(&graph, &mut Clock::new(3600)).0, expected_vertex_cover);
 /// ```
 pub fn naive_search(graph: &UnGraphMap<u64, ()>, clock: &mut Clock) -> (u64, Vec<u64>) {
-    if graph.node_count() > 64 {
-        panic!("This algorithm can only be used on graph with less than 65 vertices")
-    }
     let possible_values: Vec<u64> = (0..graph.node_count() as u64).collect();
-    let mut found = false;
-    let mut res = 0;
-    let mut res_subset: Vec<u64> = Vec::new();
-    for subset in get_subsets(&possible_values) {
-        if clock.is_time_up() {
-            break;
-        }
-        if !found || res > subset.len() as u64 {
+    for i in 0..graph.node_count() {
+        for t in possible_values.iter().combinations(i) {
+            if clock.is_time_up() {
+                return (0, Vec::new());
+            }
+            let subset: Vec<u64> = itertools::cloned(t).collect();
+
+
             if is_vertex_cover(graph, &subset) {
-                res = subset.len() as u64;
-                res_subset = subset;
-                found = true;
+                return (subset.len() as u64, subset);
             }
         }
     }
-    (res, res_subset)
+    (0, Vec::new())
 }
 
 /// Run a given algorithm on a given graph and print the result.
 ///
 /// It is the default function when you want to test your algorithm on a certain graph.
 /// It prints the result and tell you if it is optimal or not based on the data in the yaml file.
-/// The algorithm must take an UnGraphMap as input and return a u64.
+/// The algorithm must take an UnGraphMap as input and returns u64.
 ///
 /// # Example
 /// ```rust
@@ -74,13 +71,15 @@ pub fn naive_search(graph: &UnGraphMap<u64, ()>, clock: &mut Clock) -> (u64, Vec
 /// use vertex::{naive_search, run_algorithm};
 ///
 /// let mut graph = load_clq_file("src/resources/graphs/test.clq").unwrap();
-/// let res = run_algorithm("test.clq", &graph, &naive_search, false);
+/// let res = run_algorithm("test.clq", &graph, &naive_search, false).unwrap_or_else(|e| {
+///    panic!("Error while running algorithm : {}", e);
+/// });
 /// println!("{}", res);
 /// ```
 pub fn run_algorithm(graph_id: &str,
                      graph: &UnGraphMap<u64, ()>,
                      f: &dyn Fn(&UnGraphMap<u64, ()>, &mut Clock) -> (u64, Vec<u64>),
-                     cmpl: bool) -> MVCResult {
+                     cmpl: bool) -> Result<MVCResult, YamlError> {
     let g: UnGraphMap<u64, ()>;
     if cmpl {
         g = graph_utils::complement(graph);
@@ -98,19 +97,19 @@ pub fn run_algorithm(graph_id: &str,
                  density);
     }
 
-    let limit = 900;
+    let limit = 3600;
 
     let mut clock: Clock = Clock::new(limit);
 
     let res = f(&g, &mut clock);
 
     let elapsed = clock.get_time();
+    if !clock.is_time_up() {
+        assert!(is_vertex_cover(&g, &res.1));
+        assert_eq!(res.0, res.1.len() as u64);
+    }
 
-    assert!(is_vertex_cover(&g, &res.1));
-    assert_eq!(res.0, res.1.len() as u64);
-
-    let res = MVCResult::new(graph_id.to_string(), res.0, res.1, elapsed, clock.is_time_up(), cmpl);
-    return res;
+    MVCResult::new(graph_id.to_string(), res.0, res.1, elapsed, clock.is_time_up(), cmpl)
 }
 
 /// Branch and bound algorithm that searches for the minimum vertex cover of a given graph.
@@ -147,48 +146,6 @@ pub fn branch_and_bound(graph: &UnGraphMap<u64, ()>, clock: &mut Clock) -> (u64,
 
     assert!(is_vertex_cover(graph, &u.1));
     u
-}
-
-/// Iterator over all the subsets of a given set
-/// Example :
-/// * set = `[0, 1, 2]`
-/// * subsets = `[[], [0], [1], [0, 1], [2], [0, 2], [1, 2], [0, 1, 2]]`
-///
-pub struct SubsetIterator<T> where T: Clone {
-    pub set: Vec<T>,
-    pub n: usize,
-    pub n_times: usize,
-    pub i: u64,
-}
-
-impl<T> Iterator for SubsetIterator<T> where T: Clone {
-    type Item = Vec<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.i >= (1 << self.n) as u64 {
-            return None;
-        }
-        let mut subset: Vec<T> = Vec::new();
-        for j in 0..self.n {
-            if (self.i & (1 << j)) != 0 {
-                subset.push(self.set[j].clone());
-            }
-        }
-        self.i += 1;
-        Some(subset)
-    }
-}
-
-/// Returns an iterator over all the subsets of a given set. (The size of the set is capped at 63)
-fn get_subsets<T>(s: &[T]) -> SubsetIterator<T> where T: Clone {
-    let n = s.len();
-
-    SubsetIterator {
-        set: s.to_vec(),
-        n,
-        n_times: 1 << n,
-        i: 1,
-    }
 }
 
 /// Struct representing the time taken by an algorithm (in minutes, seconds, milliseconds and microseconds)
@@ -258,13 +215,13 @@ pub struct MVCResult {
 }
 
 impl MVCResult {
-    pub fn new(graph_id: String, value: u64, mvc: Vec<u64>, time: ElapseTime, is_time_limit: bool, is_compl: bool) -> MVCResult {
+    pub fn new(graph_id: String, value: u64, mvc: Vec<u64>, time: ElapseTime, is_time_limit: bool, is_compl: bool) -> Result<MVCResult, YamlError> {
         let is_optimal = if is_compl {
-            is_optimal_value(&graph_id, value, Some("src/resources/clique_data.yml"))
+            is_optimal_value(&graph_id, value, Some("src/resources/clique_data.yml"))?
         } else {
-            is_optimal_value(&graph_id, value, None)
+            is_optimal_value(&graph_id, value, None)?
         };
-        MVCResult {
+        Ok(MVCResult {
             graph_id,
             value,
             set: mvc,
@@ -272,23 +229,23 @@ impl MVCResult {
             time,
             is_time_limit,
             is_compl,
-        }
+        })
     }
 }
 
 impl Display for MVCResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let opt_message = {
-            if !self.is_optimal.is_none() {
+            if self.is_optimal.is_some() {
                 if self.is_optimal.unwrap() {
                     "\t The value is optimal (as long as the data is correct in the yaml file)".to_string()
                 } else {
                     let true_opt = if self.is_compl {
-                        get_optimal_value(&self.graph_id, Some("src/resources/clique_data.yml")).unwrap_or(0)
+                        get_optimal_value(&self.graph_id, Some("src/resources/clique_data.yml")).unwrap_or(Some(0))
                     } else {
-                        get_optimal_value(&self.graph_id, None).unwrap_or(0)
+                        get_optimal_value(&self.graph_id, None).unwrap_or(Some(0))
                     };
-                    format!("\t The value is not optimal and the correct value is {}", true_opt).to_string()
+                    format!("\t The value is not optimal and the correct value is {}", true_opt.unwrap_or(0)).to_string()
                 }
             } else {
                 "\t The graph is not in the yaml file".to_string()
@@ -338,7 +295,7 @@ impl Display for MVCResult {
 ///    println!("Time is up !");
 /// }
 /// println!("Time taken by the algorithm : {}", elapsed);
-/// println!("Time taken by subroutine1 : {}", clock.get_subroutine_duration("subroutine1"));
+/// println!("Time taken by subroutine1 : {}", clock.get_subroutine_duration("subroutine1").as_millis());
 ///
 ///
 ///```
@@ -385,7 +342,7 @@ impl Clock {
         elapsed.as_secs() >= self.limit
     }
 
-    /// Enters in a subroutine of the algorithm and start the timer for this subroutine.
+    /// Enters a subroutine of the algorithm and start the timer for this subroutine.
     /// It creates a new start time for this subroutine but don't reset the duration.
     ///
     /// If the subroutine was already entered before, it will reset the start time and add the time taken since the last time it was entered.
@@ -422,28 +379,27 @@ impl Clock {
     }
 
     /// Exits a subroutine of the algorithm and add the time taken since the last time it was entered.
-    /// If the subroutine was already exited before, it does nothing.
+    /// If the subroutine was already exit before, it does nothing.
     ///
-    /// # Panics
-    /// Panics if the subroutine was not entered before.
-    pub fn exit_subroutine(&mut self, name: &str) {
-        if self.details.contains_key(name) {
-            let (start, duration) = self.details.get(name).unwrap();
-            if !start.is_none() {
-                // If the subroutine is not exited, we exit it
-                let elapsed = start.unwrap().elapsed();
-                self.details.insert(name.to_string(), (None, *duration + elapsed));
-            }
-        } else {
-            panic!("The subroutine {} was not started", name);
+    /// # Throws
+    /// ClockError if the subroutine was not entered before.
+    pub fn exit_subroutine(&mut self, name: &str) -> Result<(), ClockError>{
+        let (start, duration) = match self.details.get(name) {
+            Some((start, duration)) => (start, duration),
+            None => return Err(ClockError::new("The subroutine was not entered before")),
+        };
+        if !start.is_none() {
+            // If the subroutine is not exit, we exit it
+            let elapsed = start.unwrap().elapsed();
+            self.details.insert(name.to_string(), (None, *duration + elapsed));
         }
+        Ok(())
     }
 
     /// Returns the time taken by a subroutine of the algorithm.
-    /// The time taken is the sum of all the time taken by this subroutine since the first time it was entered.
     ///
-    /// # Panics
-    /// Panics if the subroutine was not entered before.
+    /// The time taken is the sum of all the time taken by this subroutine since the first time it was entered.
+    /// If the subroutine was not entered before, it a duration of 0.
     ///
     /// # Example
     /// ```rust
@@ -457,15 +413,15 @@ impl Clock {
     /// clock.exit_subroutine("subroutine1");
     ///
     /// let elapsed = clock.get_subroutine_duration("subroutine1");
-    /// println!("Time taken by subroutine1 : {}", ElapseTime::new(*elapsed));
+    /// println!("Time taken by subroutine1 : {}", ElapseTime::new(elapsed));
     /// println!("Percentage of time taken by subroutine1 : {}%", elapsed.as_secs_f64() * 100.0 / clock.get_time().duration.as_secs_f64());
     /// ```
-    pub fn get_subroutine_duration(&self, name: &str) -> &Duration {
+    pub fn get_subroutine_duration(&self, name: &str) -> Duration {
         if self.details.contains_key(name) {
             let (_, duration) = self.details.get(name).unwrap();
-            duration
+            duration.clone()
         } else {
-            panic!("The subroutine {} was not started", name);
+            Duration::new(0, 0)
         }
     }
 }
@@ -486,25 +442,5 @@ mod algorithms_tests {
 
         let expected_vertex_cover = 2;
         assert_eq!(naive_search(&graph, &mut Clock::new(3600)).0, expected_vertex_cover);
-    }
-
-    #[test]
-    fn test_get_subset() {
-        let initial_set = vec![1, 2, 3];
-        let expected_subset = vec![
-            vec![],
-            vec![1],
-            vec![2],
-            vec![3],
-            vec![1, 2],
-            vec![1, 3],
-            vec![2, 3],
-            vec![1, 2, 3],
-        ];
-        let expected_subset: Box<Vec<Vec<u64>>> = Box::new(expected_subset);
-        let out = get_subsets(&initial_set);
-        for val in out {
-            assert!(expected_subset.contains(&val));
-        }
     }
 }

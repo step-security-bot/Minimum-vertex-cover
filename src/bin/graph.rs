@@ -9,7 +9,10 @@ fn main() {
     // Used to test the algorithm on a .graph file coming from a github repository
     let g = read_file();
     let res = run_algorithm("karate.graph", &g, &branch_and_bound, false);
-    println!("Result : {}", res);
+    match res {
+        Ok(res) => println!("Result : {}", res),
+        Err(e) => println!("Error : {}", e),
+    }
 }
 
 
