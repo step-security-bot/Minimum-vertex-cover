@@ -7,7 +7,7 @@ use petgraph::prelude::UnGraphMap;
 use crate::Clock;
 use crate::graph_utils::{complement, copy_graph, get_vertex_with_max_degree};
 
-pub fn b_and_b(graph: &UnGraphMap<u64, ()>,
+pub fn b_and_b(_graph: &UnGraphMap<u64, ()>,
                g: &UnGraphMap<u64, ()>,
                upper_bound: u64,
                upper_bound_vc: &Vec<u64>,
@@ -46,7 +46,7 @@ pub fn b_and_b(graph: &UnGraphMap<u64, ()>,
     // Removes v + edges from v to neighbor
     subgraph.remove_node(v);
     vertex_cover_case1.push(v);
-    let res_case1 = b_and_b(graph,
+    let res_case1 = b_and_b(_graph,
                             &subgraph,
                             upper_bound,
                             upper_bound_vc,
@@ -65,13 +65,13 @@ pub fn b_and_b(graph: &UnGraphMap<u64, ()>,
 
     let res_case2 = {
         if upper_bound >= res_case1.0 {
-            b_and_b(graph,
+            b_and_b(_graph,
                     &subgraph,
                     res_case1.0,
                     &res_case1.1,
                     vertex_cover_case2, clock)
         } else {
-            b_and_b(graph,
+            b_and_b(_graph,
                     &subgraph,
                     upper_bound,
                     upper_bound_vc,
@@ -80,13 +80,13 @@ pub fn b_and_b(graph: &UnGraphMap<u64, ()>,
         }
     };
 
-    return {
+    {
         if res_case1.0 >= res_case2.0 {
             res_case2
         } else {
             res_case1
         }
-    };
+    }
 }
 
 fn compute_lb(graph: UnGraphMap<u64, ()>, clock: &mut Clock) -> u64 {

@@ -6,7 +6,7 @@ use petgraph::prelude::UnGraphMap;
 use vertex::{branch_and_bound, run_algorithm};
 
 fn main() {
-    // Used to test the algorithm on a .graph file coming from a github repository
+    // Used to test the algorithm on a .graph file coming from a GitHub repository
     let g = read_file();
     let res = run_algorithm("karate.graph", &g, &branch_and_bound, false);
     match res {

@@ -1,6 +1,5 @@
 use std::env;
 
-use vertex;
 use vertex::graph_utils::{add_time_to_yaml, is_optimal_value, load_clq_file};
 use vertex::naive_search;
 

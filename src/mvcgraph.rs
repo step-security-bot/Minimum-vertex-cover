@@ -26,7 +26,7 @@ pub fn load_clq_file(path: &str) -> Result<MVCGraph, Box<dyn std::error::Error>>
             }
             "p" => {
                 if values[1] != "edge" && values[1] != "col" {
-                    // Idk why col but ok
+                    // IDK why col but ok
                     return Err("Expecting edge/col format".into());
                 }
                 let order = values[2].parse::<u64>()?;
@@ -61,6 +61,7 @@ pub fn load_clq_file(path: &str) -> Result<MVCGraph, Box<dyn std::error::Error>>
 
 /// Structure representing an undirected graph. The graph is represented using a hashmap where a key in the hashmap represent a
 /// vertex and the value is a list of neighbors of this vertex.
+#[derive(Default)]
 pub struct MVCGraph {
     // Hashmap of all the nodes in the graph where map[i] = [j, k, l] means that node i has outgoing edges to nodes j, k, and l
     graph_map: HashMap<u64, Vec<u64>>,
@@ -70,12 +71,8 @@ pub struct MVCGraph {
 
 impl MVCGraph {
     /// Create an empty graph
-    pub fn new() -> MVCGraph {
-        MVCGraph {
-            graph_map: HashMap::new(),
-            order: 0,
-            size: 0,
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
 
     /// Returns the order (number of nodes) of the graph
@@ -145,7 +142,7 @@ impl MVCGraph {
         if self.graph_map.contains_key(&node) {
             let edges = self.graph_map.get(&node).unwrap().clone();
             for edge in edges.iter() {
-                let edges = self.graph_map.get_mut(&edge).unwrap();
+                let edges = self.graph_map.get_mut(edge).unwrap();
                 let mut index = 0;
                 for edge in edges.iter() {
                     if *edge == node {
@@ -232,7 +229,7 @@ impl MVCGraph {
     }
 
     /// Test if the vector is a vertex cover of the graph.
-    pub fn is_vertex_cover(&self, vertex_cover: &Vec<u64>) -> bool {
+    pub fn is_vertex_cover(&self, vertex_cover: &[u64]) -> bool {
         for edge in self.get_edges() {
             if !vertex_cover.contains(&edge.0) && !vertex_cover.contains(&edge.1) {
                 return false;

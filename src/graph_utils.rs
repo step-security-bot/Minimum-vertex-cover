@@ -66,7 +66,7 @@ pub fn is_vertex_cover(graph: &UnGraphMap<u64, ()>, vertex_cover: &[u64]) -> boo
 /// graph.remove_edge(0, 1);
 /// assert!(!is_clique(&graph, &vec![0, 1, 2]));
 /// ```
-pub fn is_clique(graph: &Box<UnGraphMap<u64, ()>>, clique: &Vec<u64>) -> bool {
+pub fn is_clique(graph: &UnGraphMap<u64, ()>, clique: &Vec<u64>) -> bool {
     for i in clique {
         for j in clique {
             if i != j && !graph.contains_edge(*i, *j) {
@@ -95,7 +95,7 @@ pub fn is_clique(graph: &Box<UnGraphMap<u64, ()>>, clique: &Vec<u64>) -> bool {
 /// assert!(is_independent_set(&graph, &vec![3, 4]));
 /// assert!(!is_independent_set(&graph, &vec![0, 1, 2]));
 /// ```
-pub fn is_independent_set(graph: &Box<UnGraphMap<u64, ()>>, independent_set: &Vec<u64>) -> bool {
+pub fn is_independent_set(graph: &UnGraphMap<u64, ()>, independent_set: &Vec<u64>) -> bool {
     for i in independent_set {
         for j in independent_set {
             if i != j && graph.contains_edge(*i, *j) {
@@ -243,7 +243,7 @@ pub fn load_clq_file(path: &str) -> Result<UnGraphMap<u64, ()>, InvalidClqFileFo
 /// let string = graph_to_string(&graph);
 /// assert_eq!(string, "p edge 4 2\ne 1 2\ne 2 3\n");
 /// ```
-pub fn graph_to_string(graph: &Box<UnGraphMap<u64, ()>>) -> String {
+pub fn graph_to_string(graph: &UnGraphMap<u64, ()>) -> String {
     let mut string = String::new();
     string.push_str(&format!("p edge {} {}\n", graph.node_count(), graph.edge_count()));
     for (i, j, _) in graph.all_edges() {

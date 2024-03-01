@@ -286,10 +286,10 @@ impl Display for MVCResult {
 ///
 /// clock.enter_subroutine("subroutine1");
 /// // Do something
-/// clock.exit_subroutine("subroutine1");
+/// clock.exit_subroutine("subroutine1").expect("The subroutine was not entered before");
 /// clock.enter_subroutine("subroutine2");
 /// // Do something
-/// clock.exit_subroutine("subroutine2");
+/// clock.exit_subroutine("subroutine2").expect("The subroutine was not entered before");
 ///
 /// if clock.is_time_up() {
 ///    println!("Time is up !");
@@ -357,11 +357,11 @@ impl Clock {
     /// // Do something
     /// clock.enter_subroutine("subroutine2");
     /// // Do something
-    /// clock.exit_subroutine("subroutine2");
+    /// clock.exit_subroutine("subroutine2").expect("The subroutine was not entered before");
     ///
     /// clock.enter_subroutine("subroutine1");
     /// // Add the time taken since the last time we entered subroutine1
-    /// clock.exit_subroutine("subroutine1");
+    /// clock.exit_subroutine("subroutine1").expect("The subroutine was not entered before");
     /// ```
     pub fn enter_subroutine(&mut self, name: &str) {
         if self.details.contains_key(name) {
@@ -410,7 +410,7 @@ impl Clock {
     ///
     /// clock.enter_subroutine("subroutine1");
     /// // Do something
-    /// clock.exit_subroutine("subroutine1");
+    /// clock.exit_subroutine("subroutine1").expect("The subroutine was not entered before");
     ///
     /// let elapsed = clock.get_subroutine_duration("subroutine1");
     /// println!("Time taken by subroutine1 : {}", ElapseTime::new(elapsed));
@@ -419,7 +419,7 @@ impl Clock {
     pub fn get_subroutine_duration(&self, name: &str) -> Duration {
         if self.details.contains_key(name) {
             let (_, duration) = self.details.get(name).unwrap();
-            duration.clone()
+            *duration
         } else {
             Duration::new(0, 0)
         }
