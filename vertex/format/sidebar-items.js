@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["graph_nauty_to_petgraph","petgraph_to_graph_nauty"]};
