@@ -1,4 +1,8 @@
 # Minimum-vertex-cover
+
+![Rust workflow](https://github.com/LicorneRose765/Minimum-vertex-cover/actions/workflows/rust.yml/badge.svg)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/LicorneRose765/ClockSystem/badge)](https://securityscorecards.dev/viewer/?uri=github.com/LicorneRose765/ClockSystem)
+
 Comparison of algorithms (exact and heuristic) for the minimum vertex cover problem
 
 Documentation can be found [here](https://licornerose765.github.io/Minimum-vertex-cover/)
