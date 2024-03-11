@@ -12,7 +12,6 @@ use crate::errors::{ClockError, YamlError};
 use crate::graph_utils::{copy_graph, get_optimal_value, is_optimal_value, is_vertex_cover};
 
 pub mod graph_utils;
-pub mod format;
 mod branch_and_bound;
 pub mod mvcgraph;
 pub mod errors;

@@ -9,8 +9,10 @@ use vertex::graph_utils::{complement, is_vertex_cover, load_clq_file};
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() >= 2 {
-        let graph = load_clq_file(&format!("src/resources/graphs/{}", args[1]))
-            .expect("Error while loading graph");
+        let graph = match load_clq_file(&format!("src/resources/graphs/{}", args[1])) {
+            Ok(graph) => graph,
+            Err(e) => panic!("Error while loading graph : {}", e),
+        };
 
         find_max_clique(&args[1], &graph);
     }
